@@ -88,10 +88,18 @@ test('the server canResume flag is required to continue legacy invalid jobs', ()
 test('configuration, budget, and uncertain receipt problems have different concrete actions', () => {
   assert.equal(aiJobFeedback({ ...job, errorCode: 'AI_AUTH' }, 3)?.primary?.href, '/admin/settings');
   assert.match(aiJobFeedback({ ...job, errorCode: 'AI_BUDGET_EXCEEDED' }, 3)!.title, /budżetu/);
-  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 3)?.primary?.action, 'resume');
+  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 3)?.primary?.action, 'recheck');
   assert.equal(aiJobFeedback({ ...job, status: 'uncertain', providerRequestId: null }, 3)?.primary?.action, 'refresh');
-  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 4)?.primary?.action, 'resume');
+  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 4)?.primary?.action, 'edit');
   assert.equal(aiJobFeedback({ ...job, recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, reason: 'Brak dostępnego budżetu.', code: 'BUDGET_LIMIT', canResume: false } }, 3)?.primary?.action, 'settings');
+});
+
+test('retrying a failed retained-result read or uncertain dispatch never switches to paid recovery', () => {
+  for (const errorCode of ['AI_RESULT_UNCONFIRMED', 'AI_RECOVERY_DISPATCH_UNCONFIRMED']) {
+    const feedback = aiJobFeedback({ ...job, status: 'uncertain', errorCode,
+      recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, canResume: true, code: errorCode } }, 3)!;
+    assert.equal(feedback.primary?.action, 'recheck'); assert.match(feedback.description, /bez nowego generowania/);
+  }
 });
 
 test('ready text still requires manual acceptance and photo jobs retain their existing controls', () => {

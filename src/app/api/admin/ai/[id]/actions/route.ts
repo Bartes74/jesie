@@ -30,7 +30,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return adminResponse({ job });
     }
     const captured = await getJobForExecution(id);
-    if (captured.kind === 'recipe') return adminResponse({ job: await recoverRecipeResult(id, actor) }, 202);
+    if (captured.kind === 'recipe') return adminResponse({ job: await recheckRecipeResult(id, actor) }, 202);
     const job = await resumeJob(id, actor);
     const recovered = await recoverAcceptedPhoto(id);
     if (recovered.handled) return adminResponse({ job: recovered.job });

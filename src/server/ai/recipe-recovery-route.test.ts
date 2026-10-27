@@ -13,7 +13,7 @@ function harness(deny = false, action = 'recover') {
   const schemaCode = ts.transpileModule(readFileSync(new URL('../http/ai.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(schemaCode, { exports: httpExports, require: (path: string) => path === 'zod' ? realRequire(path) : {} });
   const imports: Record<string, unknown> = {
-    'workflow/api': {}, '@/workflows/ai-generation': {}, '@/server/ai/store': {}, '@/server/ai/text-provider': {}, '@/server/ai/image-provider': {}, '@/server/ai/accepted-photo-recovery': {},
+    'workflow/api': {}, '@/workflows/ai-generation': {}, '@/server/ai/store': { getJobForExecution: async () => ({ kind: 'recipe' }) }, '@/server/ai/text-provider': {}, '@/server/ai/image-provider': {}, '@/server/ai/accepted-photo-recovery': {},
     '@/server/ai/recipe-recovery-dispatch': Object.fromEntries(['recover', 'recheck'].map(action => [`${action}RecipeResult`, async (id: string, received: unknown) => { assert.equal(id, 'job'); assert.equal(received, actor); calls.push(action); return { id: 'effective', status: 'generating' }; }])),
     '@/server/http/admin': { adminActor: async (_request: unknown, mutate: boolean) => { assert.equal(mutate, true); calls.push('auth'); if (deny) throw new Error('forbidden'); return actor; },
       readJson: async () => { calls.push('read'); return input; }, adminResponse: (body: unknown, status = 200) => ({ body, status }) },
@@ -33,6 +33,10 @@ test('recheck is separately authenticated, strict and does not call automatic re
   assert.equal(result.status, 202); assert.deepEqual(h.calls, ['auth', 'read', 'recheck']);
   const denied = harness(true, 'recheck'); await denied.run(); assert.deepEqual(denied.calls, ['auth']);
   const invalid = harness(false, 'recheck'); invalid.invalid(); await invalid.run(); assert.deepEqual(invalid.calls, ['auth', 'read']);
+});
+test('legacy recipe resume also performs only the guarded retained-result recheck', async () => {
+  const h = harness(false, 'resume'); const result = await h.run() as unknown as { status: number };
+  assert.equal(result.status, 202); assert.deepEqual(h.calls, ['auth', 'read', 'recheck']);
 });
 test('recover rejects unauthorized requests and extra injected repair parameters', async () => {
   const denied = harness(true); await denied.run(); assert.deepEqual(denied.calls, ['auth']);
