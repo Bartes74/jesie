@@ -42,7 +42,8 @@ function harness(result = verified()) {
     attach: async (_key, _token, receipt) => { row = { ...row!, status: 'generating', providerRequestId: receipt }; },
     poll: async receipt => { calls.poll++; assert.equal(receipt, 'resp_ingredient'); return { done: true, result, cost: { chargedUsd: '0.01', costBasis: 'usage' } }; },
     complete: async (_key, _receipt, value) => {
-      calls.complete++; row = { ...row!, status: 'complete', result: value, learned: value.autoLearnEligible, eligibilityPolicyVersion: ingredientEvidencePolicyVersion };
+      calls.complete++; row = { ...row!, status: 'complete', result: value, learned: value.autoLearnEligible,
+        errorCode: null, errorMessage: null, eligibilityPolicyVersion: ingredientEvidencePolicyVersion };
       if (value.autoLearnEligible && value.diet) for (const name of Object.values(value.queriedNames)) aliases.set(normalizeIngredientVerificationName(name), value.diet);
       return row;
     },
@@ -149,10 +150,53 @@ test('an uncertain acknowledgement with a saved receipt recovers through GET and
 
 test('a cached alias conflict remains reviewable even if another dictionary entry recognises the name', async () => {
   const { content, raw } = fixture(); const h = harness(); h.aliases.set('ajwain', 'meat');
-  h.setRow({ key: 'conflict', input: { name: { pl: 'ajwain', en: 'ajwain' } }, status: 'complete', providerRequestId: 'resp_ingredient',
-    result: verified(), learned: false, errorCode: 'INGREDIENT_ALIAS_CONFLICT', errorMessage: 'Konflikt nazw wymaga sprawdzenia.' });
+  const conflict = { key: 'conflict', input: { name: { pl: 'ajwain', en: 'ajwain' } }, status: 'complete', providerRequestId: 'resp_ingredient',
+    result: verified(), learned: false, errorCode: 'INGREDIENT_ALIAS_CONFLICT', errorMessage: 'Konflikt nazw wymaga sprawdzenia.',
+    eligibilityPolicyVersion: ingredientEvidencePolicyVersion };
+  h.setRow(conflict);
+  h.deps.complete = async (key, receipt, result, cost) => {
+    h.calls.complete++; assert.equal(key, conflict.key); assert.equal(receipt, conflict.providerRequestId);
+    assert.deepEqual(result, conflict.result); assert.deepEqual(cost, {}); return conflict;
+  };
   await assert.rejects(recipeIngredientResolver(content, h.deps)(raw), error => error instanceof ProviderError && /Konflikt nazw/.test(error.issues[0].message));
-  assert.equal(h.calls.submit, 0);
+  assert.equal(h.calls.complete, 1); assert.equal(h.calls.submit, 0); assert.equal(h.calls.poll, 0); assert.equal(h.calls.claim, 0);
+  assert.equal(h.calls.fail, 0); assert.deepEqual([...h.aliases], [['ajwain', 'meat']]);
+});
+
+test('a benign cached alias conflict resumes from saved facts without submitting or polling a provider', async () => {
+  const { content, raw } = fixture(); const before = structuredClone({ content, raw }); const h = harness();
+  const savedResult = verified();
+  h.setRow({ key: 'retained-compatible', input: { name: savedResult.queriedNames }, status: 'complete', providerRequestId: 'resp_original_paid',
+    result: savedResult, learned: false, errorCode: 'INGREDIENT_ALIAS_CONFLICT', errorMessage: 'Old duplicate-query conflict.',
+    eligibilityPolicyVersion: ingredientEvidencePolicyVersion });
+  h.deps.aliases = async () => new Map(h.aliases);
+  const complete = h.deps.complete;
+  h.deps.complete = async (key, receipt, result, cost) => {
+    assert.equal(key, 'retained-compatible'); assert.equal(receipt, 'resp_original_paid');
+    assert.deepEqual(result, savedResult); assert.deepEqual(cost, {});
+    return complete(key, receipt, result, cost);
+  };
+  const resolve = recipeIngredientResolver(content, h.deps);
+  const ready = await resolve(raw);
+  assert.equal(ready.pending, false); assert.equal(ready.dictionary.get('ajwain'), 'vegan');
+  assert.equal(ready.sources[0].url, savedResult.sources[0].url);
+  assert.equal(buildRecipeProposal(raw, content, ready.dictionary).content.recipe.diet, 'vegan');
+  await resolve(raw);
+  assert.equal(h.calls.complete, 1); assert.equal(h.calls.submit, 0); assert.equal(h.calls.poll, 0); assert.equal(h.calls.claim, 0);
+  assert.equal(h.calls.permission, 0); assert.equal(h.calls.fail, 0);
+  assert.deepEqual({ content, raw }, before, 'Dictionary reconciliation must not rewrite the retained recipe.');
+});
+
+test('a local conflict reconciliation database failure is retryable without any provider or failure-state mutation', async () => {
+  const { content, raw } = fixture(); const h = harness();
+  h.setRow({ key: 'retained-compatible', input: { name: { pl: 'ajwain', en: 'ajwain' } }, status: 'complete', providerRequestId: 'resp_original_paid',
+    result: verified(), learned: false, errorCode: 'INGREDIENT_ALIAS_CONFLICT', errorMessage: 'Old duplicate-query conflict.',
+    eligibilityPolicyVersion: ingredientEvidencePolicyVersion });
+  h.deps.complete = async () => { h.calls.complete++; throw new Error('Temporary fixture database failure.'); };
+  await assert.rejects(recipeIngredientResolver(content, h.deps)(raw), error => error instanceof ProviderError
+    && error.code === 'AI_PROVIDER_STATUS_UNAVAILABLE' && error.uncertain);
+  assert.equal(h.calls.complete, 1); assert.equal(h.calls.submit, 0); assert.equal(h.calls.poll, 0); assert.equal(h.calls.claim, 0);
+  assert.equal(h.calls.fail, 0); assert.equal(h.aliases.size, 0);
 });
 
 test('a concurrent completed verification refreshes an earlier dictionary snapshot', async () => {

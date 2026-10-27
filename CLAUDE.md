@@ -55,4 +55,4 @@ Build tworzy typy tras; na świeżym klonie wykonaj go przed samodzielnym typech
 
 Realizuj zlecone odwracalne zmiany lokalne bez dodatkowych pytań o rutynowe decyzje. Nie nadpisuj pracy użytkownika. Pracuj na osobnej gałęzi, testuj adekwatny zakres, opisuj wynik i ograniczenia.
 
-Wdrożenia, migracje produkcyjne, publikowanie treści i płatne generowanie wymagają konkretnego zlecenia użytkownika; przejęcie projektu go nie zastępuje. Push nie wdraża Vercel. Pełne wdrożenie ze świeżego klonu wymaga prywatnych archiwów poza Git — patrz instrukcja przekazania.
+Wdrożenia, migracje produkcyjne, publikowanie treści i płatne generowanie wymagają konkretnego zlecenia użytkownika; przejęcie projektu go nie zastępuje. `vercel.json` wyłącza automatyczne wdrożenie produkcji po pushu do main; pozostałe gałęzie mogą otrzymywać podglądy Vercel. Pełne wdrożenie ze świeżego klonu wymaga prywatnych archiwów poza Git — patrz instrukcja przekazania.

@@ -6,6 +6,8 @@ Wpis wymaga dokładnej tożsamości pojedynczego składnika, wysokiej pewności,
 
 `ai_ingredient_verification` przechowuje niezmienne dane zapytania, potwierdzenie dostawcy, fakty i koszt. `ai_verified_ingredient_alias` udostępnia wyłącznie dokładne sprawdzone nazwy, bez dopasowania przybliżonego. Równoczesne zlecenia współdzielą zapis. Brak potwierdzenia POST blokuje ponowne płatne wysłanie; zapisane potwierdzenie umożliwia bezpieczny GET.
 
+Różne pary nazw PL/EN mogą mieć wspólną sprawdzoną nazwę. Sam inny identyfikator weryfikacji nie oznacza konfliktu: obie aktualnie dopuszczone weryfikacje muszą mieć zgodne dokładne nazwy kanoniczne w obu językach, rodzaj i dietę oraz wspólną stronę źródłową potwierdzającą tożsamość. Istniejący alias zachowuje właściciela; dopisywane są tylko nowe, rzeczywiście sprawdzone nazwy. Sama zgodna dieta nie wystarcza. Choćby jeden niezgodny właściciel blokuje cały nowy wpis. Zapisany konflikt jest ponownie oceniany lokalnie przy odczycie zachowanego wyniku, bez nowego researchu i bez zmiany opłaconych faktów lub kosztów.
+
 Wersja polityki dowodów jest oddzielna od klucza tożsamości. Zmiana filtra instytucji może ponownie ocenić tę samą opłaconą odpowiedź, zachowując jej źródła, fakty i koszt. Nie tworzy nowego researchu. Wynik negatywny według bieżącej polityki jest zapamiętany.
 
 Zaufany słownik jest pobierany także przy zapisie, zastosowaniu wyniku, akceptacji treści i publikacji. Przeglądarka nie dostarcza własnego potwierdzenia. Linki źródłowe trafiają do prywatnego szkicu; koszty są ujęte raz przy pierwotnym zleceniu lub w researchu bez przepisu.

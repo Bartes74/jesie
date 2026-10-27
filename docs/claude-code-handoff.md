@@ -98,7 +98,7 @@ Przed commitem można uruchomić `gitleaks git --pre-commit --staged --redact --
 
 Brak private-media/provider-recovery, published-recovery i quota-public-recovery jest dopuszczalny w bazowym development. Pełna inwentaryzacja backupu wymaga prawdziwych katalogów i manifestów. Przed identycznym wdrożeniem z nowego klonu odtwórz prywatne artefakty z kontrolowanej kopii poza Git i zweryfikuj kompletność. Nie zastępuj ich pustymi manifestami.
 
-Push uruchamia kontrole, a produkcja jest wdrażana ręcznie. Projekt Vercel: zgotujsobie w bartek-dajerpls-projects; konfiguracja połączenia jest lokalna. Samo przejęcie nie zleca wdrożeń, migracji, publikacji ani płatnego AI. Przy osobnym zleceniu wydania: potwierdź cel, wykonaj backup i potrzebne nowe migracje, zbuduj produkcję bez przełączenia domeny, sprawdź, promuj tę samą wersję, odśwież snapshot i zweryfikuj drogę użytkownika.
+Push uruchamia kontrole, a produkcja jest wdrażana ręcznie: `vercel.json` ustawia `git.deploymentEnabled.main=false`. Pozostałe gałęzie mogą otrzymywać automatyczne podglądy Vercel. Projekt Vercel: zgotujsobie w bartek-dajerpls-projects; lokalny plik połączenia pozostaje poza Git. Samo przejęcie nie zleca wdrożeń, migracji, publikacji ani płatnego AI. Przy osobnym zleceniu wydania: potwierdź cel, wykonaj backup i potrzebne nowe migracje, zbuduj produkcję bez przełączenia domeny, sprawdź, promuj tę samą wersję, odśwież snapshot i zweryfikuj drogę użytkownika.
 
 ## 7. Dalsza praca po audycie
 
