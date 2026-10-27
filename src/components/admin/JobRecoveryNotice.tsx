@@ -19,7 +19,7 @@ export function JobRecoveryNotice({ job, currentRevision, disabled = false, busy
       {job.recovery?.status === 'exhausted' && (primary?.action === 'recover' || primary?.action === 'recheck') && <div>{onEdit
         ? <button type="button" className="admin-text-link" disabled={disabled || busy} onClick={onEdit}>Popraw wskazówki<ArrowRight size={15} /></button>
         : <Link className="admin-text-link" href={editHref ?? `/admin/recipes/${encodeURIComponent(job.recipeId)}`}>Popraw wskazówki<ArrowRight size={15} /></Link>}</div>}
-      {primary?.action === 'settings' && job.recovery?.canResume && onRecover && <div><button type="button" className="admin-text-link" disabled={disabled || busy} onClick={onRecover}>Po zmianie ustawień dokończ przepis<ArrowRight size={15} /></button></div>}
+      {primary?.action === 'settings' && job.recovery?.canResume && (job.kind === 'recipe' && job.providerRequestId ? onRecheck : onRecover) && <div><button type="button" className="admin-text-link" disabled={disabled || busy} onClick={job.kind === 'recipe' && job.providerRequestId ? onRecheck : onRecover}>{job.kind === 'recipe' && job.providerRequestId ? 'Po zmianie ustawień sprawdź zapisany wynik' : 'Po zmianie ustawień dokończ przepis'}<ArrowRight size={15} /></button></div>}
       {(job.errorCode || job.errorMessage) && <details className="job-recovery-diagnostics"><summary>Szczegóły diagnostyczne</summary>{job.errorMessage && <p>{job.errorMessage}</p>}{job.errorCode && <p>Kod: {job.errorCode.replace(/^AI_/, '')}</p>}</details>}
     </div>
   </section>;

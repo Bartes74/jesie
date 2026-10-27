@@ -239,4 +239,9 @@ test('the vocabulary notice invokes only the explicit recheck callback and disab
   button.props.onClick!();
   assert.deepEqual(calls, ['recheck']);
   assert.equal(findButton(exports.JobRecoveryNotice!({ ...props, busy: true }))!.props.disabled, true);
+  for (const code of ['AI_PROVIDER_AUTH_REQUIRED', 'AI_PROVIDER_QUOTA']) {
+    const settings = { ...props, job: { ...props.job, recovery: { ...props.job.recovery, code } } };
+    findButton(exports.JobRecoveryNotice!(settings))!.props.onClick!();
+  }
+  assert.deepEqual(calls, ['recheck', 'recheck', 'recheck'], 'Returning from settings must preserve the read-only continuation.');
 });
