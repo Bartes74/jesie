@@ -111,3 +111,5 @@ Każde zadanie: osobna gałąź, spójny zakres, adekwatne testy, wynik i ograni
 ## Zachowane wyniki przepisów
 
 Po naprawie słownika zakończone zadania wymagają ponownej walidacji. Nie wystarczy poprawić aliasów i uznać przepisu za odzyskany. Panel udostępnia osobne sprawdzanie zachowanego wyniku bez nowych płatnych zleceń; procedura i granice: [retained-recipe-recheck.md](retained-recipe-recheck.md). Weryfikuj gotowy wynik w panelu i niezmienione koszty, zamiast ograniczać kontrolę do słownika.
+
+Aktualizacja 28.10.2026: PR #1 i #2 są scalone, a poprawka ponownego odczytu działa na produkcji. Punkt kodu: `release-2026-10-28-recipe-recheck`. Oba zachowane wyniki Miang Kham odblokowano bez nowych opłat; uproszczony edytor wczytuje gotową propozycję do szkicu osobno od ręcznej akceptacji treści. Szczegółowe dowody, wersja wdrożenia i snapshotu znajdują się w powyższej procedurze.
