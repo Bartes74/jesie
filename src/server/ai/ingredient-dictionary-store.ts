@@ -8,6 +8,7 @@ import { getDb } from '@/server/db';
 import { aiJobs } from './schema';
 import type { AiTransaction } from './store';
 import type { RecipeDietId } from '@/lib/recipe-diet';
+import { sameVerifiedIngredientIdentity } from './ingredient-alias-identity';
 import { ingredientEvidencePolicyVersion, ingredientVerificationInputSchema, ingredientVerificationResultSchema, normalizeIngredientVerificationName,
   type IngredientVerificationInput, type IngredientVerificationResult } from '@/lib/ingredient-verification';
 
@@ -135,7 +136,8 @@ export async function completeVerification(key: string, providerRequestId: strin
     }
     const costs = costUpdate(record, cost);
     const eligibilityChanged = record.result?.autoLearnEligible !== result.autoLearnEligible;
-    if (record.status === 'complete' && record.eligibilityPolicyVersion === ingredientEvidencePolicyVersion && !eligibilityChanged) {
+    if (record.status === 'complete' && record.eligibilityPolicyVersion === ingredientEvidencePolicyVersion && !eligibilityChanged
+      && record.errorCode !== 'INGREDIENT_ALIAS_CONFLICT') {
       const [updated] = await tx.update(ingredientVerifications).set({ ...costs, updatedAt: new Date() }).where(eq(ingredientVerifications.key, key)).returning();
       return updated;
     }
@@ -143,7 +145,18 @@ export async function completeVerification(key: string, providerRequestId: strin
     // Serialize overlapping queried aliases too, in a stable order.
     for (const alias of aliases) await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`ingredient-alias:${alias}`}))`);
     const existing = aliases.length ? await tx.select().from(verifiedIngredientAliases).where(inArray(verifiedIngredientAliases.normalizedAlias, aliases)) : [];
-    const conflict = existing.some(alias => alias.verificationKey !== key || alias.diet !== result.diet);
+    const ownerKeys = [...new Set(existing.map(alias => alias.verificationKey).filter(owner => owner !== key))];
+    // Owner facts are immutable. Do not lock another verification row while
+    // holding alias locks: overlapping completions could otherwise deadlock.
+    const owners = ownerKeys.length ? await tx.select().from(ingredientVerifications).where(inArray(ingredientVerifications.key, ownerKeys)) : [];
+    const byKey = new Map(owners.map(owner => [owner.key, owner]));
+    const conflict = existing.some(alias => {
+      if (alias.diet !== result.diet) return true;
+      if (alias.verificationKey === key) return false;
+      const owner = byKey.get(alias.verificationKey);
+      return !owner || owner.status !== 'complete' || !owner.learned || owner.eligibilityPolicyVersion !== ingredientEvidencePolicyVersion
+        || !sameVerifiedIngredientIdentity(owner.result, result);
+    });
     if (!conflict && aliases.length) await tx.insert(verifiedIngredientAliases).values(aliases.map(normalizedAlias => ({ normalizedAlias, verificationKey: key, diet: result.diet!, createdAt: new Date() }))).onConflictDoNothing();
     const [updated] = await tx.update(ingredientVerifications).set({ ...costs, result, eligibilityPolicyVersion: ingredientEvidencePolicyVersion, status: 'complete', learned: aliases.length > 0 && !conflict,
       errorCode: conflict ? 'INGREDIENT_ALIAS_CONFLICT' : null, errorMessage: conflict ? 'Potwierdzona nazwa jest już przypisana do innego wpisu. Nie zmieniono słownika.' : null,

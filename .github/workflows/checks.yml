@@ -38,6 +38,8 @@ jobs:
         run: npm test
       - name: Collection tests without providers
         run: npm run test:collections
+      - name: Ingredient verification tests without providers
+        run: npm run test:ingredient-verification
       - name: Production build and generated route types
         run: npm run build
       - name: TypeScript

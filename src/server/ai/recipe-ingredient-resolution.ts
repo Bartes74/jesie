@@ -71,7 +71,18 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
       seen.add(identity);
       const namesKnown = () => unrecognisedRecipeIngredientNames([ingredient]).every(name => dictionary.has(normalizeIngredientVerificationName(name)));
       let row = await deps.find(query);
-      if (row?.errorCode === 'INGREDIENT_ALIAS_CONFLICT') throw unresolved(ingredient, row);
+      if (row?.errorCode === 'INGREDIENT_ALIAS_CONFLICT') {
+        // Reconcile immutable, already-paid evidence locally. A former false
+        // conflict must not purchase a fresh lookup or re-poll the provider.
+        if (row.status === 'complete' && row.result?.autoLearnEligible && row.providerRequestId
+          && row.eligibilityPolicyVersion === ingredientEvidencePolicyVersion) {
+          try { row = await deps.complete(row.key, row.providerRequestId, row.result, {}); }
+          catch {
+            throw new ProviderError('AI_PROVIDER_STATUS_UNAVAILABLE', 'Nie udało się ponownie sprawdzić zapisanych dowodów składnika. Zachowano istniejący wynik; spróbuj odczytu ponownie.', true);
+          }
+        }
+        if (row.errorCode === 'INGREDIENT_ALIAS_CONFLICT' || !row.learned) throw unresolved(ingredient, row);
+      }
       // Another recipe's worker may have promoted this exact identity after
       // the first dictionary read and before the verification-row read.
       if (row?.status === 'complete' && row.learned) dictionary = await deps.aliases(allNames);
