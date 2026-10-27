@@ -113,22 +113,32 @@ export async function withRecipeRecovery(jobs: AiJob[], db: Database = getDb()):
     const stale = latest.baseRevision !== latest.revision || Boolean(latest.deletedAt) || latest.editorialStatus === 'archived';
     const ready = Boolean(latest.result && ['ready', 'applied'].includes(latest.status));
     const recovering = !stale && ['queued', 'submitting', 'generating'].includes(latest.status);
-    const unsupportedVocabulary = !ready && !recovering && (latestEntry?.blockedCode === 'RECIPE_DIET_VOCABULARY_UNSUPPORTED'
-      || rows.find(row => row.id === actualLatestEntry?.jobId)?.errorCode === 'RECIPE_DIET_VOCABULARY_UNSUPPORTED'
-      || hasUnrecognisedDietaryIngredient(latestEntry?.failureIssues ?? []));
+    const invalidResult = latest.status === 'failed' && latest.errorCode === 'AI_RESULT_INVALID';
+    // The only ancestor substitution above is a deliberately blocked, unsent
+    // legacy vocabulary repair. Keep that protection while reading its parent.
+    const legacyVocabularyChild = Boolean(actualLatestEntry && latestEntry?.jobId !== actualLatestEntry.jobId);
+    // Failure evidence remains stored for history, but an earlier validation
+    // must not mask a new receipt read, dispatch failure or completed result.
+    const currentFailureIssues = !ready && !recovering && (invalidResult || legacyVocabularyChild) ? latestEntry?.failureIssues ?? [] : [];
+    const unsupportedVocabulary = !ready && !recovering && (legacyVocabularyChild || invalidResult
+      && (latestEntry?.blockedCode === 'RECIPE_DIET_VOCABULARY_UNSUPPORTED' || hasUnrecognisedDietaryIngredient(currentFailureIssues)));
+    const currentBlockedState = !ready && !recovering && (invalidResult || legacyVocabularyChild
+      || Boolean(latestEntry?.blockedCode && latestEntry.blockedCode === latest.errorCode));
+    const blockedCode = currentBlockedState ? latestEntry?.blockedCode : null;
+    const blockedMessage = currentBlockedState ? latestEntry?.blockedMessage : null;
     const exhausted = !ready && !unsupportedVocabulary && latest.status === 'failed' && latest.errorCode === 'AI_RESULT_INVALID' && attempt >= recipeRepairLimit;
     const safeQueuedChild = Boolean(latestEntry && latestEntry.attempt > 0 && latest.status === 'queued' && !latest.providerRequestId && !latest.result);
     const canResume = !stale && (recipeReceiptCanBeRead(latest) || safeQueuedChild || latest.status === 'generating' && Boolean(latest.providerRequestId))
       && (latest.status !== 'failed' || Boolean(latest.providerFinishedAt));
     return { ...job, recovery: { status: ready ? 'ready' : exhausted ? 'exhausted' : recovering ? 'recovering' : 'blocked', attempt, maxAttempts: recipeRepairLimit,
-      jobId: latest.id, canResume, code: stale ? 'STALE_RESULT' : unsupportedVocabulary ? 'RECIPE_DIET_VOCABULARY_UNSUPPORTED' : latestEntry?.blockedCode ?? latest.errorCode ?? undefined,
-      issues: latestEntry?.failureIssues ?? [], reason: stale ? 'Przepis zmienił się od tego zlecenia. Zachowano wynik; rozpocznij opracowanie bieżącej wersji.'
+      jobId: latest.id, canResume, code: stale ? 'STALE_RESULT' : unsupportedVocabulary ? 'RECIPE_DIET_VOCABULARY_UNSUPPORTED' : blockedCode ?? latest.errorCode ?? undefined,
+      issues: currentFailureIssues, reason: stale ? 'Przepis zmienił się od tego zlecenia. Zachowano wynik; rozpocznij opracowanie bieżącej wersji.'
         : unsupportedVocabulary ? 'Aplikacja nie rozpoznaje składnika potrzebnego do klasyfikacji dania. Zachowano wynik; automatyczne płatne poprawki są wstrzymane.'
         : exhausted ? canResume
           ? 'Wykorzystano dwie automatyczne poprawki. Możesz ponownie sprawdzić zapisany wynik bez kolejnej generacji. Jeśli błędy pozostaną, popraw wskazówki przed nowym opracowaniem.'
           : 'Dwie próby poprawy nie wystarczyły. Sprawdź wskazane pola i popraw wskazówki przed nowym opracowaniem.'
         : ready ? 'Przepis jest gotowy do Twojego sprawdzenia.' : recovering ? 'System odczytuje istniejący wynik lub poprawia wskazane pola. Nie trzeba ponownie zlecać generowania.'
-        : latestEntry?.blockedMessage ?? (latest.errorCode === 'AI_RESULT_INVALID' ? 'Najpierw odczytamy i sprawdzimy istniejący wynik bez nowej generacji. W razie potrzeby system wykona najwyżej dwie rozliczane poprawki.' : recipeRecoveryReason(latest.errorCode)) } };
+        : blockedMessage ?? (latest.errorCode === 'AI_RESULT_INVALID' ? 'Najpierw odczytamy i sprawdzimy istniejący wynik bez nowej generacji. W razie potrzeby system wykona najwyżej dwie rozliczane poprawki.' : recipeRecoveryReason(latest.errorCode)) } };
   });
 }
 

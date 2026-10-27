@@ -40,6 +40,8 @@ jobs:
         run: npm run test:collections
       - name: Ingredient verification tests without providers
         run: npm run test:ingredient-verification
+      - name: Retained recipe recovery tests without providers or database
+        run: npm run test:result-recovery:unit
       - name: Production build and generated route types
         run: npm run build
       - name: TypeScript

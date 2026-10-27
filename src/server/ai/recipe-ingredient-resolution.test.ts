@@ -78,6 +78,28 @@ test('known and malformed recipes do not submit an ingredient lookup', async () 
   }
 });
 
+test('explicit retained-result recheck cannot claim or buy research for a missing verification', async () => {
+  const { content, raw } = fixture(); const h = harness();
+  await assert.rejects(recipeIngredientResolver(content, h.deps, { existingOnly: true })(raw),
+    error => error instanceof ProviderError && !error.repairable && /nie uruchamia nowych płatnych/.test(error.issues[0].message));
+  assert.deepEqual(h.calls, { submit: 0, poll: 0, claim: 0, permission: 0, pending: 0, complete: 0, fail: 0 });
+});
+
+test('explicit retained-result recheck may GET an existing paid ingredient receipt without submitting', async () => {
+  const { content, raw } = fixture(); const h = harness();
+  h.setRow({ key: 'saved-key', input: { name: { pl: 'ajwain', en: 'ajwain' } }, status: 'generating', providerRequestId: 'resp_ingredient', result: null });
+  const result = await recipeIngredientResolver(content, h.deps, { existingOnly: true })(raw);
+  assert.equal(result.pending, false); assert.equal(result.dictionary.get('ajwain'), 'vegan');
+  assert.equal(h.calls.poll, 1); assert.equal(h.calls.complete, 1); assert.equal(h.calls.submit, 0); assert.equal(h.calls.claim, 0);
+});
+
+test('explicit recheck never reclaims a submitting ingredient verification', async () => {
+  const { content, raw } = fixture(); const h = harness();
+  h.setRow({ key: 'saved-key', input: { name: { pl: 'ajwain', en: 'ajwain' } }, status: 'submitting', providerRequestId: null, result: null });
+  await assert.rejects(recipeIngredientResolver(content, h.deps, { existingOnly: true })(raw), ProviderError);
+  assert.equal(h.calls.claim, 0); assert.equal(h.calls.submit, 0); assert.equal(h.calls.poll, 0);
+});
+
 test('one recognised translation cannot conceal an unfamiliar name in the other language', async () => {
   const { content, raw } = fixture(); const h = harness(); raw.ingredients[0].name.pl = 'pieprz';
   const pending = await recipeIngredientResolver(content, h.deps)(raw);

@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 import type { AiJob } from './ai-types';
-import { aiJobFeedback, canStartNewRecipeText, jobHasOngoingWork, photoRecoveryPollInterval, recipeIssueLabel } from './ai-job-feedback';
+import { aiJobFeedback, canStartNewRecipeText, jobHasOngoingWork, photoRecoveryPollInterval, recipeIssueLabel, recipeRecoveryProgressMessage } from './ai-job-feedback';
 import { readyPreparationAction } from './preparation-client';
 
 const job = { id: 'root', recipeId: 'recipe', kind: 'recipe', status: 'failed', baseRevision: 3, errorCode: 'AI_RESULT_INVALID', errorMessage: 'Wynik wymaga poprawy.', providerRequestId: 'receipt' } as AiJob;
@@ -64,7 +67,7 @@ test('an exhausted server-confirmed receipt offers only an explicit saved-result
   const exhausted: AiJob = { ...job, recovery: { status: 'exhausted', attempt: 2, maxAttempts: 2,
     jobId: 'last-repair', canResume: true, issues: [{ field: 'ingredients.nori.name', message: 'Unrecognised ingredient.' }] } };
   const feedback = aiJobFeedback(exhausted, 3)!;
-  assert.deepEqual(feedback.primary, { action: 'recover', label: 'Sprawdź zapisany wynik' });
+  assert.deepEqual(feedback.primary, { action: 'recheck', label: 'Sprawdź zapisany wynik' });
   assert.match(feedback.description, /dwie automatyczne poprawki/);
   assert.match(feedback.description, /bez kolejnej generacji/);
   assert.match(feedback.description, /Jeśli nadal zawiera błędy, popraw wskazówki/);
@@ -85,10 +88,18 @@ test('the server canResume flag is required to continue legacy invalid jobs', ()
 test('configuration, budget, and uncertain receipt problems have different concrete actions', () => {
   assert.equal(aiJobFeedback({ ...job, errorCode: 'AI_AUTH' }, 3)?.primary?.href, '/admin/settings');
   assert.match(aiJobFeedback({ ...job, errorCode: 'AI_BUDGET_EXCEEDED' }, 3)!.title, /budżetu/);
-  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 3)?.primary?.action, 'resume');
+  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 3)?.primary?.action, 'recheck');
   assert.equal(aiJobFeedback({ ...job, status: 'uncertain', providerRequestId: null }, 3)?.primary?.action, 'refresh');
-  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 4)?.primary?.action, 'resume');
+  assert.equal(aiJobFeedback({ ...job, status: 'uncertain' }, 4)?.primary?.action, 'edit');
   assert.equal(aiJobFeedback({ ...job, recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, reason: 'Brak dostępnego budżetu.', code: 'BUDGET_LIMIT', canResume: false } }, 3)?.primary?.action, 'settings');
+});
+
+test('retrying a failed retained-result read or uncertain dispatch never switches to paid recovery', () => {
+  for (const errorCode of ['AI_RESULT_UNCONFIRMED', 'AI_RECOVERY_DISPATCH_UNCONFIRMED']) {
+    const feedback = aiJobFeedback({ ...job, status: 'uncertain', errorCode,
+      recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, canResume: true, code: errorCode } }, 3)!;
+    assert.equal(feedback.primary?.action, 'recheck'); assert.match(feedback.description, /bez nowego generowania/);
+  }
 });
 
 test('ready text still requires manual acceptance and photo jobs retain their existing controls', () => {
@@ -170,4 +181,67 @@ test('only a server-confirmed retained mask offers free restoration through its 
   assert.match(restore.description, /kolejnej płatnej maski/);
   assert.equal(jobHasOngoingWork({ ...mask, canRestorePhotoContents: true }), false);
   assert.equal(aiJobFeedback({ ...mask, canRestorePhotoContents: true, status: 'ready' }), null);
+});
+
+
+test('a retained vocabulary failure offers an explicitly free recheck instead of automatic repair', () => {
+  const blocked: AiJob = { ...job, recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, canResume: true,
+    code: 'RECIPE_DIET_VOCABULARY_UNSUPPORTED', issues: [{ field: 'ingredients.chaplu.name', message: 'Nazwa wymaga sprawdzenia.' }] } };
+  const feedback = aiJobFeedback(blocked, 3)!;
+  assert.deepEqual(feedback.primary, { action: 'recheck', label: 'Sprawdź zapisany wynik' });
+  assert.match(feedback.description, /nie uruchomi nowego generowania ani płatnego sprawdzania składników/);
+  assert.doesNotMatch(recipeRecoveryProgressMessage(feedback)!, /Sprawdzamy|bez nowego generowania/);
+  assert.match(recipeRecoveryProgressMessage(feedback)!, /Zachowano wynik/);
+  assert.equal(aiJobFeedback({ ...blocked, providerRequestId: null }, 3)?.primary?.action, 'edit');
+  assert.equal(aiJobFeedback({ ...blocked, recovery: { ...blocked.recovery!, canResume: false } }, 3)?.primary?.action, 'edit');
+  assert.equal(aiJobFeedback(blocked, 4)?.primary?.action, 'edit');
+});
+
+test('an initial retained-result read does not claim that a paid repair has been submitted', () => {
+  const reading: AiJob = { ...job, status: 'generating', errorCode: null, recovery: { status: 'recovering', attempt: 0, maxAttempts: 2,
+    jobId: job.id, canResume: true, issues: [] } };
+  const feedback = aiJobFeedback(reading, 3)!;
+  assert.equal(feedback.tone, 'working');
+  assert.match(feedback.title, /Sprawdzamy zapisane zgłoszenie/);
+  assert.doesNotMatch(feedback.description, /przekazał je do poprawy|Automatycznie poprawiamy|bez nowego generowania/);
+  assert.match(recipeRecoveryProgressMessage(feedback)!, /Sprawdzamy zapisane zgłoszenie/);
+  assert.equal(feedback.primary, undefined);
+});
+
+test('the vocabulary notice invokes only the explicit recheck callback and disables it while busy', () => {
+  type Element = { type: unknown; props: { children?: unknown; onClick?: () => void; disabled?: boolean } };
+  const jsx = (type: unknown, props: Element['props']): Element => ({ type, props });
+  const exports: { JobRecoveryNotice?: (props: object) => Element } = {};
+  const source = ts.transpileModule(readFileSync(new URL('../components/admin/JobRecoveryNotice.tsx', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  runInNewContext(source, { exports, require: (path: string) => {
+    if (path === 'react/jsx-runtime') return { jsx, jsxs: jsx };
+    if (path === 'next/link') return { default: 'a' };
+    if (path === 'lucide-react') return {};
+    if (path === '@/lib/ai-job-feedback') return { aiJobFeedback, recipeRecoveryProgressMessage };
+    assert.equal(path, './job-recovery.css'); return {};
+  } });
+  const findButton = (element: unknown): Element | undefined => {
+    if (!element || typeof element !== 'object') return;
+    if (Array.isArray(element)) return element.map(findButton).find(Boolean);
+    const node = element as Element;
+    return node.type === 'button' ? node : findButton(node.props?.children);
+  };
+  const calls: string[] = [];
+  const props = {
+    job: { ...job, recovery: { status: 'blocked', attempt: 0, maxAttempts: 2, canResume: true, code: 'RECIPE_DIET_VOCABULARY_UNSUPPORTED' } },
+    currentRevision: 3, onRecover: () => calls.push('recover'), onRecheck: () => calls.push('recheck'),
+  };
+  const button = findButton(exports.JobRecoveryNotice!(props))!;
+  assert.ok(button);
+  assert.equal(button.props.disabled, false);
+  button.props.onClick!();
+  assert.deepEqual(calls, ['recheck']);
+  assert.equal(findButton(exports.JobRecoveryNotice!({ ...props, busy: true }))!.props.disabled, true);
+  for (const code of ['AI_PROVIDER_AUTH_REQUIRED', 'AI_PROVIDER_QUOTA']) {
+    const settings = { ...props, job: { ...props.job, recovery: { ...props.job.recovery, code } } };
+    findButton(exports.JobRecoveryNotice!(settings))!.props.onClick!();
+  }
+  assert.deepEqual(calls, ['recheck', 'recheck', 'recheck'], 'Returning from settings must preserve the read-only continuation.');
 });

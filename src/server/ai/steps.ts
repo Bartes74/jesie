@@ -86,11 +86,12 @@ export async function submitGeneration(id: string) {
 // Never automatically repeat a paid POST after a transport/process failure.
 submitGeneration.maxRetries = 0;
 
-export async function pollGeneration(id: string) {
+export async function pollGeneration(id: string, existingRecipeOnly = false) {
   'use step';
   let job;
   try { job = await getJobForExecution(id); }
   catch { throw new RetryableError('AI_JOB_STATE_UNAVAILABLE', { retryAfter: '30s' }); }
+  if (existingRecipeOnly && (job.kind !== 'recipe' || !job.providerRequestId)) return true;
   if(job.reuseSourceJobId)return resolveIngredientReuse(id);
   if (job.result || ['ready', 'applied', 'failed', 'uncertain'].includes(job.status)) return true;
   if (!job.providerRequestId) return true;
@@ -98,7 +99,7 @@ export async function pollGeneration(id: string) {
     if (job.kind === 'recipe') {
       const recovery = await recipeRecoverySubmission(id);
       const result = await pollText(job.model, job.providerRequestId, job.input, recovery.ancestorRequestIds,
-        raw => resolveRecipeIngredients(job, raw));
+        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }));
       if (!result.done) return false;
       await finishRecipe(id, result.content, result.cost, result.notes, { verifiedResearchSources: true });
     } else {

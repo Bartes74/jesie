@@ -107,3 +107,7 @@ Push uruchamia kontrole, a produkcja jest wdrażana ręcznie: `vercel.json` usta
 3. Dodaj testy przeglądarkowe kolekcji PL/EN: ponad trzy dania, porcje, zakupy, trwałość i kontekst przepisu. Rzeczywiste generowanie oprawy jest osobnym kontrolowanym testem z kosztami i prywatną kolekcją.
 
 Każde zadanie: osobna gałąź, spójny zakres, adekwatne testy, wynik i ograniczenia, commit i PR do main. Aktualizuj dowody po wykonanych kontrolach, nie przedstawiaj planów jako ukończonych.
+
+## Zachowane wyniki przepisów
+
+Po naprawie słownika zakończone zadania wymagają ponownej walidacji. Nie wystarczy poprawić aliasów i uznać przepisu za odzyskany. Panel udostępnia osobne sprawdzanie zachowanego wyniku bez nowych płatnych zleceń; procedura i granice: [retained-recipe-recheck.md](retained-recipe-recheck.md). Weryfikuj gotowy wynik w panelu i niezmienione koszty, zamiast ograniczać kontrolę do słownika.

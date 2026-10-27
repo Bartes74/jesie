@@ -5,10 +5,10 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { AiError } from './errors';
 
-function harness(options: { status?: string; unknown?: boolean; lostStart?: boolean; lostAttach?: boolean; dispatch?: boolean } = {}) {
+function harness(options: { status?: string; unknown?: boolean; lostStart?: boolean; lostAttach?: boolean; dispatch?: boolean; existingOnly?: boolean } = {}) {
   const calls: string[] = []; const job = { id: 'existing', status: 'generating' };
   const imports: Record<string, unknown> = { 'server-only': {}, 'workflow/api': {}, '@/workflows/ai-generation': {}, './errors': { AiError },
-    './store': {}, './recipe-recovery': {}, './recipe-recovery-state': {} };
+    '@/workflows/recipe-recheck': {}, './store': {}, './recipe-recovery': {}, './recipe-recovery-state': {} };
   const exports: Partial<typeof import('./recipe-recovery-dispatch')> = {};
   const code = ts.transpileModule(readFileSync(new URL('./recipe-recovery-dispatch.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(code, { exports, console, require: (path: string) => { assert.ok(Object.hasOwn(imports, path), path); return imports[path]; } });
@@ -21,11 +21,15 @@ function harness(options: { status?: string; unknown?: boolean; lostStart?: bool
     run: () => ({ status: async () => { if (options.unknown) throw new Error('outage'); return options.status; }, wake: async () => { calls.push('wake'); } }),
     unconfirmed: async () => { calls.push('retain'); },
   };
-  const recover = exports.createRecipeRecoveryDispatcher!(dependencies as never);
+  const recover = exports.createRecipeRecoveryDispatcher!(dependencies as never, { existingOnly: options.existingOnly });
   return { calls, run: () => recover('original', { id: 'owner', name: 'Owner', email: '', role: 'owner' }) };
 }
 test('an active worker is woken rather than duplicated', async () => {
   const h = harness({ status: 'running' }); await h.run(); assert.deepEqual(h.calls, ['wake']);
+});
+test('a read-only recheck cannot wake an older workflow that could still buy a repair', async () => {
+  const h = harness({ status: 'running', existingOnly: true });
+  await assert.rejects(h.run(), { code: 'AI_RECOVERY_ALREADY_RUNNING' }); assert.deepEqual(h.calls, []);
 });
 test('a confirmed terminated worker permits one guarded replacement', async () => {
   const h = harness({ status: 'failed' }); await h.run(); assert.deepEqual(h.calls, ['begin', 'start', 'record']);

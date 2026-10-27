@@ -7,8 +7,15 @@ export type AiJobFeedback = {
   reason?: string;
   progress?: { attempt: number; maxAttempts: number };
   issues: { field: string; label: string; message: string }[];
-  primary?: { action: 'recover' | 'resume' | 'edit' | 'settings' | 'view' | 'refresh'; label: string; href?: string };
+  primary?: { action: 'recover' | 'recheck' | 'resume' | 'edit' | 'settings' | 'view' | 'refresh'; label: string; href?: string };
 };
+
+export function recipeRecoveryProgressMessage(feedback: AiJobFeedback): string | undefined {
+  if (!feedback.progress) return;
+  const { attempt, maxAttempts } = feedback.progress;
+  if (attempt === 0) return `${feedback.tone === 'working' ? 'Sprawdzamy zapisane zgłoszenie' : 'Zachowano wynik i historię zgłoszenia'}; limit automatycznych poprawek: ${maxAttempts}.`;
+  return `Wykorzystane automatyczne poprawki: ${attempt} z ${maxAttempts}.`;
+}
 
 export function jobHasOngoingWork(job: AiJob | null | undefined): boolean {
   if (job?.photoSourceStatus) return false;
@@ -95,19 +102,28 @@ export function aiJobFeedback(job: AiJob, currentRevision?: number): AiJobFeedba
     description: job.errorMessage || 'Porównujemy nazwę ze źródłami kulinarnymi. Po potwierdzeniu sprawdzimy zachowany przepis ponownie.',
   };
   if (recovery?.status === 'ready' && recovery.jobId && recovery.jobId !== job.id) return { ...base, tone: 'success', title: 'Poprawiony przepis jest gotowy', description: 'Automatyczna naprawa zakończyła się. Otwórz gotowy wynik, przeczytaj go i zdecyduj, czy zapisać go w szkicu.', primary: { action: 'view', label: 'Zobacz gotowy przepis', href: `/admin/ai/${encodeURIComponent(recovery.jobId)}` } };
-  if (recovery?.status === 'recovering') return { ...base, tone: 'working', title: 'Automatycznie poprawiamy przepis', description: 'Wykryliśmy brakujące lub niespójne informacje. System przekazał je do poprawy i ponownie sprawdzi całość. Możesz wrócić później; postęp odświeża się automatycznie.', reason };
+  if (recovery?.status === 'recovering') return { ...base, tone: 'working', title: 'Sprawdzamy zapisane zgłoszenie', description: 'Sprawdzamy stan przygotowania i zachowany wynik przepisu. Gotową treść pokażemy do przeczytania i akceptacji. Możesz wrócić później; postęp odświeża się automatycznie.', reason };
   if (job.status === 'ready' || job.status === 'applied' || jobHasOngoingWork(job)) return null;
   if (/AUTH|API_KEY|CREDENTIAL|CONFIG|MODEL_ACCESS|MODEL_NOT_APPROVED|PROVIDER_REJECTED/.test(code)) return { ...base, tone: 'warning', title: 'Generator wymaga poprawnej konfiguracji', description: 'Nie możemy kontynuować bez dostępu do usługi. Sprawdź konfigurację generatora w ustawieniach, a następnie wróć do tego przepisu.', reason, primary: { action: 'settings', label: 'Otwórz ustawienia', href: '/admin/settings' } };
   if (/BUDGET|PACKET_LIMIT|QUOTA|INSUFFICIENT|CREDIT|PAYMENT|BILLING/.test(code)) return { ...base, tone: 'warning', title: 'Brak dostępnego budżetu na dalszą pracę', description: 'Gotowe materiały są zachowane. Sprawdź limit i dostępne środki w ustawieniach; kontynuacja będzie możliwa po usunięciu blokady.', reason, primary: { action: 'settings', label: 'Sprawdź budżet', href: '/admin/settings' } };
-  if (job.status === 'uncertain') return { ...base, tone: 'warning', title: 'Sprawdzamy, czy generator zakończył pracę', description: job.providerRequestId || job.reuseSourceJobId ? 'Zapisane zgłoszenie może nadal być wykonywane. Sprawdź jego istniejący wynik przed kolejnym działaniem.' : 'Usługa nie potwierdziła przyjęcia zgłoszenia. Odśwież stan tego zadania; do czasu wyjaśnienia nie rozpoczynaj kolejnego generowania.', primary: job.providerRequestId || job.reuseSourceJobId ? { action: 'resume', label: 'Sprawdź istniejące zgłoszenie' } : { action: 'refresh', label: 'Odśwież stan zgłoszenia' } };
   if (stale) return { ...base, tone: 'warning', title: 'Przepis zmienił się od rozpoczęcia pracy', description: 'Zachowaliśmy Twoje zmiany. Sprawdź aktualną treść i wskazówki; nowe przygotowanie rozpocznie się na podstawie bieżącej wersji.', primary: edit };
+  if (job.status === 'uncertain') return { ...base, tone: 'warning', title: 'Sprawdzamy, czy generator zakończył pracę', description: job.providerRequestId ? 'Możesz ponownie sprawdzić zapisany wynik bez nowego generowania ani płatnego sprawdzania składników.' : 'Usługa nie potwierdziła przyjęcia zgłoszenia. Odśwież stan tego zadania; do czasu wyjaśnienia nie rozpoczynaj kolejnego generowania.', primary: job.providerRequestId ? { action: 'recheck', label: 'Sprawdź zapisany wynik' } : { action: 'refresh', label: 'Odśwież stan zgłoszenia' } };
   if (code === 'RECIPE_MODEL_CHANGED') return { ...base, tone: 'warning', title: 'Zmieniła się konfiguracja generatora', description: 'Zachowaliśmy wcześniejszy wynik i historię prób. Otwórz przepis, sprawdź wskazówki i zapisz bieżącą wersję przed nowym opracowaniem.', reason, primary: edit };
   if (recovery?.status === 'exhausted') return { ...base, tone: 'warning', title: 'Automatyczne poprawki nie wystarczyły',
-    description: recovery.canResume
+    description: recovery.canResume && job.providerRequestId
       ? 'Wykorzystano dwie automatyczne poprawki. Możesz ponownie odczytać i sprawdzić zapisany wynik bez kolejnej generacji. Jeśli nadal zawiera błędy, popraw wskazówki przed nowym opracowaniem.'
       : 'Wykorzystaliśmy limit prób dla tego zgłoszenia. Sprawdź wskazane pola i popraw wskazówki przed nowym opracowaniem. Twój szkic pozostaje zachowany.',
-    reason, primary: recovery.canResume ? { action: 'recover', label: 'Sprawdź zapisany wynik' } : edit };
-  if (recovery?.status === 'blocked') return { ...base, tone: 'warning', title: 'Przygotowanie przepisu zostało zatrzymane', description: recovery.canResume ? 'Możesz bezpiecznie kontynuować to samo zgłoszenie. System zachowa historię i limit automatycznych poprawek.' : 'Sprawdź przyczynę poniżej i popraw wskazówki przepisu. Dalsze przygotowanie wymaga usunięcia tej przeszkody.', reason, primary: recovery.canResume ? { action: 'recover', label: 'Dokończ automatycznie' } : edit };
+    reason, primary: recovery.canResume && job.providerRequestId ? { action: 'recheck', label: 'Sprawdź zapisany wynik' } : edit };
+  if (recovery?.status === 'blocked') {
+    if (code === 'RECIPE_DIET_VOCABULARY_UNSUPPORTED') return {
+      ...base, tone: 'warning', title: 'Przygotowanie przepisu zostało zatrzymane',
+      description: recovery.canResume && job.providerRequestId
+        ? 'Możesz ponownie sprawdzić zachowany wynik po uzupełnieniu słownika. Ten odczyt nie uruchomi nowego generowania ani płatnego sprawdzania składników. Historia i limit poprawek pozostają zachowane.'
+        : 'Sprawdź wskazaną nazwę składnika i wskazówki przepisu. Dalsze przygotowanie wymaga wyjaśnienia tej przeszkody.',
+      reason, primary: recovery.canResume && job.providerRequestId ? { action: 'recheck', label: 'Sprawdź zapisany wynik' } : edit,
+    };
+    return { ...base, tone: 'warning', title: 'Przygotowanie przepisu zostało zatrzymane', description: recovery.canResume ? 'Możesz bezpiecznie kontynuować to samo zgłoszenie. System zachowa historię i limit automatycznych poprawek.' : 'Sprawdź przyczynę poniżej i popraw wskazówki przepisu. Dalsze przygotowanie wymaga usunięcia tej przeszkody.', reason, primary: recovery.canResume ? { action: 'recover', label: 'Dokończ automatycznie' } : edit };
+  }
   if (job.kind === 'recipe' && job.status === 'failed' && /RESULT_INVALID|RESEARCH_SOURCE_INVALID/.test(code)) return { ...base, tone: 'warning', title: 'Przepis wymaga uzupełnienia przed zapisaniem', description: 'Wynik nie przeszedł sprawdzenia kompletności. System może poprawić wykryte braki w ograniczonej liczbie prób. Potem otrzymasz pełny przepis do przeczytania i akceptacji.', primary: recovery?.canResume ? { action: 'recover', label: 'Dokończ automatycznie' } : edit };
   if (job.status === 'cancelled') return { ...base, tone: 'warning', title: 'Przygotowanie zostało anulowane', description: 'Twój przepis jest zachowany. Wróć do niego, sprawdź wskazówki i rozpocznij przygotowanie, kiedy będzie potrzebne.', primary: edit };
   if (job.status === 'failed') return { ...base, tone: 'warning', title: 'Nie udało się zakończyć przygotowania', description: 'Twój szkic jest zachowany. Sprawdź wskazówki i spróbuj przygotować przepis ponownie. Jeśli problem się powtórzy, sprawdź konfigurację generatora w ustawieniach.', reason: reason || (job.errorMessage ? issueMessage(job.errorMessage) : undefined), primary: edit };
