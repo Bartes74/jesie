@@ -1,0 +1,14 @@
+# Reviewed non-secrets only; keep exact file/rule/line fingerprints.
+# Public Keychain account label, not the encryption key.
+scripts/encrypt-backup.ts:generic-api-key:11
+# Synthetic request/preview UUIDs in isolated tests.
+src/lib/preparation-client.test.ts:generic-api-key:8
+src/lib/preparation-client.test.ts:generic-api-key:10
+src/lib/preparation-client.test.ts:generic-api-key:15
+src/lib/recipe-preview.test.ts:generic-api-key:8
+src/lib/recipe-preview.test.ts:generic-api-key:9
+src/server/editorial/preparation.test.ts:generic-api-key:13
+src/server/reader-feedback-handler.test.ts:generic-api-key:5
+# Deterministic ingredient identity and test-only IndexNow ownership fixture.
+src/server/ai/ingredient-profile.test.ts:generic-api-key:29
+src/server/seo/discovery.test.ts:generic-api-key:27

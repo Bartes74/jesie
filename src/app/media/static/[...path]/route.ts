@@ -1,0 +1,6 @@
+import { createStaticMediaRoute } from '@/server/media/static-delivery-route';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export const GET = createStaticMediaRoute();

@@ -1,0 +1,1423 @@
+{
+  "version": 1,
+  "capturedAt": "2026-10-13T15:50:52Z",
+  "expiresAt": "2026-10-14T15:50:52Z",
+  "sourceSha256": "ec024ae426c2d1ea8a14495e9df375895648186494082898e5e61ef95319604b",
+  "assets": {
+    "68365fe4-439a-4507-a9b2-de65b2ea13ec": {
+      "kind": "ingredient",
+      "blobPathname": "ai/68365fe4-439a-4507-a9b2-de65b2ea13ec/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "815e40a9-cb1a-484a-b9ad-4b4120659ba1": {
+      "kind": "ingredient",
+      "blobPathname": "ai/815e40a9-cb1a-484a-b9ad-4b4120659ba1/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "f46c69b4-ec7d-4f00-be10-d1eed6fe9633": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f46c69b4-ec7d-4f00-be10-d1eed6fe9633/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf",
+        "6b2523db-1489-499f-a81a-6ecdfd61597e",
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b9229252-6f52-405b-8966-5a6f232b4f0c",
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4",
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "2ba63aa5-86ff-4871-b9c7-c881dda59ed6": {
+      "kind": "ingredient",
+      "blobPathname": "ai/2ba63aa5-86ff-4871-b9c7-c881dda59ed6/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c",
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "db73b4bd-4f1c-4bd1-a77f-292db148aa27": {
+      "kind": "ingredient",
+      "blobPathname": "ai/db73b4bd-4f1c-4bd1-a77f-292db148aa27/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "843cd0dd-589d-487b-881f-414548e45dcf": {
+      "kind": "ingredient",
+      "blobPathname": "ai/843cd0dd-589d-487b-881f-414548e45dcf/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "6b2523db-1489-499f-a81a-6ecdfd61597e",
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4",
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe",
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "f957a8d3-df7b-42cd-897e-fc56a1901ea0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f957a8d3-df7b-42cd-897e-fc56a1901ea0/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "a45d35b9-243b-400a-a845-c7c63c71b323": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/6a12901d-25b8-40f8-9a88-ea7553b73c36-df0b74a78b0b7b4ad23ee7fd250bfe37b2c7d57b7762eec0ecb55be31b338ada.png",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf",
+        "6b2523db-1489-499f-a81a-6ecdfd61597e",
+        "b549efa4-8514-4a64-a963-f4f39d4f073c",
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "09575620-d92a-43b6-bec9-e2f32b8f31aa": {
+      "kind": "ingredient",
+      "blobPathname": "ai/09575620-d92a-43b6-bec9-e2f32b8f31aa/web.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "a339b38b-c31f-4520-91f2-a132f31df9d8": {
+      "kind": "ingredient",
+      "blobPathname": "ai/a339b38b-c31f-4520-91f2-a132f31df9d8/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82",
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b9229252-6f52-405b-8966-5a6f232b4f0c",
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4",
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "a6b49e77-e2a5-467f-8506-40f8e553a428": {
+      "kind": "hero",
+      "blobPathname": "ai/reviewed-hero/6679a5de-bc62-4cc9-832c-a8bbedccf9dc/234c40adfc47211b24bca3203db9e05c9887aedf132eba10b92bf535f84f77b0.png",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "12100d42-cf45-47a4-ac61-1089f6963233": {
+      "kind": "ingredient",
+      "blobPathname": "ai/12100d42-cf45-47a4-ac61-1089f6963233/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "0ddcde0f-040c-44d9-8385-180ecf72a628": {
+      "kind": "step",
+      "blobPathname": "ai/0ddcde0f-040c-44d9-8385-180ecf72a628/web-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "44a970cb-91c6-429e-be20-30e9fe6fba0f": {
+      "kind": "step",
+      "blobPathname": "ai/44a970cb-91c6-429e-be20-30e9fe6fba0f/web-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "b00a8316-af45-4a46-a695-b9cb6ce3ab67": {
+      "kind": "ingredient",
+      "blobPathname": "ai/b00a8316-af45-4a46-a695-b9cb6ce3ab67/original-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "8892f9c7-ecf1-4043-bdda-380a90bc5b5f": {
+      "kind": "step",
+      "blobPathname": "ai/8892f9c7-ecf1-4043-bdda-380a90bc5b5f/web-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "1a8ed356-2fcb-4572-bf05-a8f2d60d3d44": {
+      "kind": "step",
+      "blobPathname": "ai/1a8ed356-2fcb-4572-bf05-a8f2d60d3d44/web-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "3b804d70-5825-4f25-a9d3-4c6067c90840": {
+      "kind": "step",
+      "blobPathname": "ai/3b804d70-5825-4f25-a9d3-4c6067c90840/web-v1.webp",
+      "publicRecipeIds": [
+        "b974f7dd-6226-463e-aa20-33194d6cd8c4"
+      ]
+    },
+    "7e16d9ee-a077-49fc-9c17-755d1b601639": {
+      "kind": "ingredient",
+      "blobPathname": "ai/7e16d9ee-a077-49fc-9c17-755d1b601639/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82",
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "fb04dcbc-efd6-41f5-8588-05c0bbfd6696": {
+      "kind": "ingredient",
+      "blobPathname": "ai/fb04dcbc-efd6-41f5-8588-05c0bbfd6696/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b9229252-6f52-405b-8966-5a6f232b4f0c",
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "58dc58e2-63f5-488b-98ca-4862abf21baa": {
+      "kind": "ingredient",
+      "blobPathname": "ai/58dc58e2-63f5-488b-98ca-4862abf21baa/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "445c5408-7c76-40bd-bb51-53fdc181c8d7": {
+      "kind": "ingredient",
+      "blobPathname": "ai/445c5408-7c76-40bd-bb51-53fdc181c8d7/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "335e9a28-f53d-486e-a93a-ebd115cde804": {
+      "kind": "ingredient",
+      "blobPathname": "ai/335e9a28-f53d-486e-a93a-ebd115cde804/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "0f652beb-7d5f-4829-90e8-13c968cb2fb4": {
+      "kind": "ingredient",
+      "blobPathname": "ai/0f652beb-7d5f-4829-90e8-13c968cb2fb4/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "da1fc898-7317-4868-b176-e2d10d099a0c": {
+      "kind": "hero",
+      "blobPathname": "ai/da1fc898-7317-4868-b176-e2d10d099a0c/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "9dfc1dda-3ad0-43e3-a011-8a14022ea108": {
+      "kind": "ingredient",
+      "blobPathname": "ai/9dfc1dda-3ad0-43e3-a011-8a14022ea108/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "2038fd05-c86a-4ba9-8bd4-bc6f18ed3206": {
+      "kind": "ingredient",
+      "blobPathname": "ai/2038fd05-c86a-4ba9-8bd4-bc6f18ed3206/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "181e6f28-31c2-478c-a374-ce94e716f3d8": {
+      "kind": "step",
+      "blobPathname": "ai/181e6f28-31c2-478c-a374-ce94e716f3d8/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "9155de02-b3e0-4781-868c-86fea1e93ccf": {
+      "kind": "step",
+      "blobPathname": "ai/9155de02-b3e0-4781-868c-86fea1e93ccf/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "fdf0a564-9123-4cf1-90fb-d860b9109720": {
+      "kind": "ingredient",
+      "blobPathname": "ai/fdf0a564-9123-4cf1-90fb-d860b9109720/original-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "88b04dc2-e8c3-4a75-abbc-879c2fa4e156": {
+      "kind": "step",
+      "blobPathname": "ai/88b04dc2-e8c3-4a75-abbc-879c2fa4e156/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "3a1c663e-e398-46ca-9373-c8b5cdeb9d7e": {
+      "kind": "step",
+      "blobPathname": "ai/3a1c663e-e398-46ca-9373-c8b5cdeb9d7e/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "153f0bcd-e157-4cf7-b8d8-64f102b017ae": {
+      "kind": "step",
+      "blobPathname": "ai/153f0bcd-e157-4cf7-b8d8-64f102b017ae/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "9b1e6102-b79e-44bb-bb44-a5ceae771dce": {
+      "kind": "step",
+      "blobPathname": "ai/9b1e6102-b79e-44bb-bb44-a5ceae771dce/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "13147883-a0a8-4a35-aa5f-4430ff4eef0b": {
+      "kind": "step",
+      "blobPathname": "ai/13147883-a0a8-4a35-aa5f-4430ff4eef0b/web-v1.webp",
+      "publicRecipeIds": [
+        "fc71fcf7-0428-4ac9-a13a-564a9d7a3439"
+      ]
+    },
+    "3671694a-25c7-42e3-864e-6996d7217fc7": {
+      "kind": "ingredient",
+      "blobPathname": "ai/3671694a-25c7-42e3-864e-6996d7217fc7/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "205e2137-aaa8-44aa-a8b9-2bdc35419c87": {
+      "kind": "ingredient",
+      "blobPathname": "ai/205e2137-aaa8-44aa-a8b9-2bdc35419c87/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "09c23c29-1fe7-4e71-94da-4895b67ea4ec": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/2b496873-f403-49f5-89ff-da307333e270-f4399bbb7d353d7d2151f05ffa99d2ff6a2785bc693a1d4590d12f06199bdff9.png",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "2b2bc4e8-f669-4229-9422-491086039f1c": {
+      "kind": "ingredient",
+      "blobPathname": "ai/2b2bc4e8-f669-4229-9422-491086039f1c/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "85a13a51-d05c-4726-ac27-f332b6bc5d61": {
+      "kind": "hero",
+      "blobPathname": "ai/85a13a51-d05c-4726-ac27-f332b6bc5d61/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "a6b20e6c-7d0d-4a8c-ae7e-38f0b32c644d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/a6b20e6c-7d0d-4a8c-ae7e-38f0b32c644d/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "900a2a71-6e6c-4581-adc7-022bd28e82c9": {
+      "kind": "ingredient",
+      "blobPathname": "ai/900a2a71-6e6c-4581-adc7-022bd28e82c9/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "863690de-a00b-46dc-8d21-919f9c0171a4": {
+      "kind": "ingredient",
+      "blobPathname": "ai/863690de-a00b-46dc-8d21-919f9c0171a4/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "531c77a1-ee9a-454a-8995-5b4b3b0584e6": {
+      "kind": "ingredient",
+      "blobPathname": "ai/531c77a1-ee9a-454a-8995-5b4b3b0584e6/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf",
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "59c40db4-10ab-4b25-bb35-32af1c183890": {
+      "kind": "ingredient",
+      "blobPathname": "ai/59c40db4-10ab-4b25-bb35-32af1c183890/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82",
+        "77d32f06-483b-41e5-8054-048e575f1b81",
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "f66805bb-7e41-4f32-9481-47dc48adacc7": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f66805bb-7e41-4f32-9481-47dc48adacc7/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "f5b9c345-15b3-4da7-af5d-52472e37b237": {
+      "kind": "step",
+      "blobPathname": "ai/f5b9c345-15b3-4da7-af5d-52472e37b237/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "4d630acc-c21a-4d8f-93ef-df2c3b1e2b98": {
+      "kind": "step",
+      "blobPathname": "ai/4d630acc-c21a-4d8f-93ef-df2c3b1e2b98/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "826cb55e-aa8d-44f2-820f-d0d9a2b7ccb7": {
+      "kind": "step",
+      "blobPathname": "ai/826cb55e-aa8d-44f2-820f-d0d9a2b7ccb7/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "c99d1ea9-9bda-4eb4-87b2-93a73077dcfc": {
+      "kind": "step",
+      "blobPathname": "ai/c99d1ea9-9bda-4eb4-87b2-93a73077dcfc/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "13db1039-35fb-450b-86c4-0b05c39868ac": {
+      "kind": "step",
+      "blobPathname": "ai/13db1039-35fb-450b-86c4-0b05c39868ac/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "c3b4c2f6-db18-44e8-a630-ab7feb97c17b": {
+      "kind": "step",
+      "blobPathname": "ai/c3b4c2f6-db18-44e8-a630-ab7feb97c17b/web.webp",
+      "publicRecipeIds": [
+        "77d32f06-483b-41e5-8054-048e575f1b81"
+      ]
+    },
+    "d377e7b4-f22b-445f-be60-ea57db9998cc": {
+      "kind": "ingredient",
+      "blobPathname": "ai/d377e7b4-f22b-445f-be60-ea57db9998cc/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "606cf21c-78c6-4e79-b339-1a749982d06f": {
+      "kind": "hero",
+      "blobPathname": "ai/606cf21c-78c6-4e79-b339-1a749982d06f/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "5994bb52-8f41-427d-bf69-2b86689817e8": {
+      "kind": "ingredient",
+      "blobPathname": "ai/5994bb52-8f41-427d-bf69-2b86689817e8/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "d36fc00c-a6d0-4621-a01d-f3553d18f932": {
+      "kind": "ingredient",
+      "blobPathname": "ai/d36fc00c-a6d0-4621-a01d-f3553d18f932/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "6b2523db-1489-499f-a81a-6ecdfd61597e",
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "e1d48379-10f9-4a10-99c1-643cb151040c": {
+      "kind": "ingredient",
+      "blobPathname": "ai/e1d48379-10f9-4a10-99c1-643cb151040c/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "b25c73d5-aee2-4a99-a97f-126b3fe591d2": {
+      "kind": "ingredient",
+      "blobPathname": "ai/b25c73d5-aee2-4a99-a97f-126b3fe591d2/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "cabc0474-3342-49e4-b415-82f7f994d21d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/cabc0474-3342-49e4-b415-82f7f994d21d/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "7503fa17-9d14-4de8-988f-db1a10dd79e3": {
+      "kind": "ingredient",
+      "blobPathname": "ai/7503fa17-9d14-4de8-988f-db1a10dd79e3/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "60ad9180-094f-4c5e-802e-29d642bd25b4": {
+      "kind": "ingredient",
+      "blobPathname": "ai/60ad9180-094f-4c5e-802e-29d642bd25b4/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "ad129c5e-e932-4a2c-a666-d0c8a93c0951": {
+      "kind": "step",
+      "blobPathname": "ai/ad129c5e-e932-4a2c-a666-d0c8a93c0951/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "7f90e11b-5753-4a44-8dcb-c33b2b7df295": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/9f3d9c61-a53c-4af1-bda3-b298b4b83c6c-67d1d67a53d05b18f6f9c231b056f4e1e27e7595dc52057a8fbd4cb1c8d04962.png",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b",
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "d3ff54be-4c68-4844-a5eb-4046645954f8": {
+      "kind": "ingredient",
+      "blobPathname": "ai/d3ff54be-4c68-4844-a5eb-4046645954f8/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "ee00e383-106c-4304-b023-fa406ac03560": {
+      "kind": "step",
+      "blobPathname": "ai/ee00e383-106c-4304-b023-fa406ac03560/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "78ec9a22-96f8-4f84-b8e6-d611833da6ef": {
+      "kind": "step",
+      "blobPathname": "ai/78ec9a22-96f8-4f84-b8e6-d611833da6ef/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "b255474a-ff28-4c5d-835d-3ee5488be444": {
+      "kind": "step",
+      "blobPathname": "ai/b255474a-ff28-4c5d-835d-3ee5488be444/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "49eb8c4f-f7e2-443c-9126-cd3182c38804": {
+      "kind": "step",
+      "blobPathname": "ai/49eb8c4f-f7e2-443c-9126-cd3182c38804/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "569f722b-0bef-4eb3-a967-2dd73927815f": {
+      "kind": "step",
+      "blobPathname": "ai/569f722b-0bef-4eb3-a967-2dd73927815f/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "4b8f0dfc-46a7-4ec4-a8cb-8627c0ba24e2": {
+      "kind": "step",
+      "blobPathname": "ai/4b8f0dfc-46a7-4ec4-a8cb-8627c0ba24e2/web.webp",
+      "publicRecipeIds": [
+        "32e9c1d9-d345-4889-a626-43c0ebfb3d5b"
+      ]
+    },
+    "51e05560-c26b-4cff-adf6-a62e0b9f5e67": {
+      "kind": "ingredient",
+      "blobPathname": "ai/51e05560-c26b-4cff-adf6-a62e0b9f5e67/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "867cf7f8-f1c3-4a3c-a224-27470bc45505": {
+      "kind": "ingredient",
+      "blobPathname": "ai/867cf7f8-f1c3-4a3c-a224-27470bc45505/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "ed59b007-eb97-4679-acbd-db96be68ca92": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ed59b007-eb97-4679-acbd-db96be68ca92/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "f61e1cdc-8155-4674-8303-8aeece10965f": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f61e1cdc-8155-4674-8303-8aeece10965f/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "e8c6afc0-8621-4cc4-8e39-6e86b34547d7": {
+      "kind": "ingredient",
+      "blobPathname": "ai/e8c6afc0-8621-4cc4-8e39-6e86b34547d7/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "89f2fc25-6daa-4238-96a4-cc9f1933900e": {
+      "kind": "ingredient",
+      "blobPathname": "ai/89f2fc25-6daa-4238-96a4-cc9f1933900e/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "0c586978-db91-4b8e-b799-3086f1839a35": {
+      "kind": "hero",
+      "blobPathname": "ai/0c586978-db91-4b8e-b799-3086f1839a35/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "3d5b9130-c15e-477d-a8cf-2b0aac744b89": {
+      "kind": "step",
+      "blobPathname": "ai/3d5b9130-c15e-477d-a8cf-2b0aac744b89/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "effea94f-efc9-4a74-b1fb-93f5b28580b7": {
+      "kind": "step",
+      "blobPathname": "ai/effea94f-efc9-4a74-b1fb-93f5b28580b7/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "b80c52cd-ba4d-4e07-a397-a8bba410ecfc": {
+      "kind": "step",
+      "blobPathname": "ai/b80c52cd-ba4d-4e07-a397-a8bba410ecfc/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "8f747c19-8540-4be2-9345-cb98acd376b9": {
+      "kind": "step",
+      "blobPathname": "ai/8f747c19-8540-4be2-9345-cb98acd376b9/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "8f13b46e-636c-4f92-b9da-a9f042f8a4ae": {
+      "kind": "step",
+      "blobPathname": "ai/8f13b46e-636c-4f92-b9da-a9f042f8a4ae/web.webp",
+      "publicRecipeIds": [
+        "00541e2a-ae68-4917-b88d-e7f7c07e7e82"
+      ]
+    },
+    "c6b1d2de-737b-40f8-b2a2-0dd4196461f0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/c6b1d2de-737b-40f8-b2a2-0dd4196461f0/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "a7f920f2-fc80-45ff-a091-a352bb29e6fb": {
+      "kind": "ingredient",
+      "blobPathname": "ai/a7f920f2-fc80-45ff-a091-a352bb29e6fb/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "8f9e6c52-6cac-4fdf-9302-538805d88b0e": {
+      "kind": "ingredient",
+      "blobPathname": "ai/8f9e6c52-6cac-4fdf-9302-538805d88b0e/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf",
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "d5b0af62-52e7-40c8-bdca-9b3a788c2d2f": {
+      "kind": "hero",
+      "blobPathname": "ai/d5b0af62-52e7-40c8-bdca-9b3a788c2d2f/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "ed47248b-4e41-4eb4-b868-b23ca91b8b9d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ed47248b-4e41-4eb4-b868-b23ca91b8b9d/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "241fb5e4-b5ad-4c05-b76d-b8bc13cd0b3c": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/fe5130a1-fce5-4789-9798-8baea0db1e96-bac8c437247a3803a1e7ced272b5631304e7f194893b2083bfc3ec42c88b4e3d.png",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e",
+        "b549efa4-8514-4a64-a963-f4f39d4f073c",
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "5276e2bd-6079-43a1-a250-0a65a0c10d50": {
+      "kind": "ingredient",
+      "blobPathname": "ai/5276e2bd-6079-43a1-a250-0a65a0c10d50/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "b5c56fef-7280-4fb7-9662-e3ebe8a0ccfe": {
+      "kind": "ingredient",
+      "blobPathname": "ai/b5c56fef-7280-4fb7-9662-e3ebe8a0ccfe/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "b099deb2-52c6-4a17-8e73-5e4580b495ad": {
+      "kind": "ingredient",
+      "blobPathname": "ai/b099deb2-52c6-4a17-8e73-5e4580b495ad/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "ac628520-1584-4689-a1f1-c29cb95aa575": {
+      "kind": "step",
+      "blobPathname": "ai/ac628520-1584-4689-a1f1-c29cb95aa575/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "50b5899d-4d14-45a2-afaf-08b04e8e41d7": {
+      "kind": "step",
+      "blobPathname": "ai/50b5899d-4d14-45a2-afaf-08b04e8e41d7/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "4eb0695e-7d5e-4ed6-9a61-f24e238bcc3f": {
+      "kind": "ingredient",
+      "blobPathname": "ai/4eb0695e-7d5e-4ed6-9a61-f24e238bcc3f/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "274057ed-d24b-4571-a120-938586b73884": {
+      "kind": "step",
+      "blobPathname": "ai/274057ed-d24b-4571-a120-938586b73884/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "13ae529e-785b-40b2-bb9f-90b605937354": {
+      "kind": "step",
+      "blobPathname": "ai/13ae529e-785b-40b2-bb9f-90b605937354/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "e6809e62-91f3-4869-b262-2f0b75ef1ff6": {
+      "kind": "step",
+      "blobPathname": "ai/e6809e62-91f3-4869-b262-2f0b75ef1ff6/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "eb86d962-a4a2-4f19-8c13-a877e23327e2": {
+      "kind": "step",
+      "blobPathname": "ai/eb86d962-a4a2-4f19-8c13-a877e23327e2/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "efbe8659-6aa1-4305-a67a-9478990f8637": {
+      "kind": "step",
+      "blobPathname": "ai/efbe8659-6aa1-4305-a67a-9478990f8637/web.webp",
+      "publicRecipeIds": [
+        "6b2523db-1489-499f-a81a-6ecdfd61597e"
+      ]
+    },
+    "c01d969e-2b3a-481a-a6d3-89533ad79c58": {
+      "kind": "ingredient",
+      "blobPathname": "ai/c01d969e-2b3a-481a-a6d3-89533ad79c58/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "51755c0c-750c-401d-83bb-419e0ab07f11": {
+      "kind": "ingredient",
+      "blobPathname": "ai/51755c0c-750c-401d-83bb-419e0ab07f11/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "2175ee12-7422-4680-8e39-9ae5f7c70def": {
+      "kind": "ingredient",
+      "blobPathname": "ai/2175ee12-7422-4680-8e39-9ae5f7c70def/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "66f58641-537f-48b0-b93f-36ed77b81f24": {
+      "kind": "hero",
+      "blobPathname": "ai/66f58641-537f-48b0-b93f-36ed77b81f24/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "ff3311b7-9cba-4d59-9e6f-999a1bc115f9": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/5c6d02e2-0716-494d-8c4b-7186d12fe06c-794e54a249ee80509399ff77b124c4eb8ce0ac57164535230b9b5a2a8d66b389.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c",
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "3b8034ad-0f25-42b6-af29-ac2c81c1b947": {
+      "kind": "ingredient",
+      "blobPathname": "ai/3b8034ad-0f25-42b6-af29-ac2c81c1b947/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "2bdac1b1-03df-4bed-977c-76ae7dea0d9b": {
+      "kind": "step",
+      "blobPathname": "ai/2bdac1b1-03df-4bed-977c-76ae7dea0d9b/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "43bee6ce-925f-495c-bda8-1e5dc971c04f": {
+      "kind": "step",
+      "blobPathname": "ai/43bee6ce-925f-495c-bda8-1e5dc971c04f/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "345b1578-bc00-4482-a635-4070c0314a74": {
+      "kind": "ingredient",
+      "blobPathname": "ai/345b1578-bc00-4482-a635-4070c0314a74/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "837234a8-31a4-493e-954c-0417b2ac24b9": {
+      "kind": "ingredient",
+      "blobPathname": "ai/837234a8-31a4-493e-954c-0417b2ac24b9/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "fd794985-4c92-410f-9b7c-cd70b655def8": {
+      "kind": "step",
+      "blobPathname": "ai/fd794985-4c92-410f-9b7c-cd70b655def8/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "0068b5d5-30e3-472e-8ea0-bdc1ceedab15": {
+      "kind": "step",
+      "blobPathname": "ai/0068b5d5-30e3-472e-8ea0-bdc1ceedab15/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "632ca7e0-bc8a-43e2-87c0-5dd74a68f638": {
+      "kind": "step",
+      "blobPathname": "ai/632ca7e0-bc8a-43e2-87c0-5dd74a68f638/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "c00a544c-56f2-4b01-a490-5506943dbfa8": {
+      "kind": "step",
+      "blobPathname": "ai/c00a544c-56f2-4b01-a490-5506943dbfa8/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "ad7405e7-727b-4f9f-b407-54313051b91f": {
+      "kind": "step",
+      "blobPathname": "ai/ad7405e7-727b-4f9f-b407-54313051b91f/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "1b0977b7-cfab-4029-8cd6-45e1fe52c7c6": {
+      "kind": "step",
+      "blobPathname": "ai/1b0977b7-cfab-4029-8cd6-45e1fe52c7c6/web.webp",
+      "publicRecipeIds": [
+        "c8e6ff07-38de-4949-b28c-7e5f0655c2fe"
+      ]
+    },
+    "ac2335e2-a46a-43f6-b3e2-249b1b690d9c": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ac2335e2-a46a-43f6-b3e2-249b1b690d9c/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "da59e751-41a7-400a-9a70-52b33d75e860": {
+      "kind": "ingredient",
+      "blobPathname": "ai/da59e751-41a7-400a-9a70-52b33d75e860/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "cdd22a0b-e181-4fe9-95c4-312d5833462a": {
+      "kind": "ingredient",
+      "blobPathname": "ai/cdd22a0b-e181-4fe9-95c4-312d5833462a/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "ff34a3da-6d86-4ad3-bce2-17eae6c8a9fe": {
+      "kind": "step",
+      "blobPathname": "ai/ff34a3da-6d86-4ad3-bce2-17eae6c8a9fe/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "d09dccde-224d-4c0c-b85c-02f7c2879314": {
+      "kind": "step",
+      "blobPathname": "ai/d09dccde-224d-4c0c-b85c-02f7c2879314/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "6d58c483-b847-4c6d-a6e2-8a59740b1afb": {
+      "kind": "hero",
+      "blobPathname": "ai/6d58c483-b847-4c6d-a6e2-8a59740b1afb/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "c03eaf75-5a50-4b66-aa49-b3194987bf4d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/c03eaf75-5a50-4b66-aa49-b3194987bf4d/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "44837fe5-db2b-4240-9fbe-3474bc718823": {
+      "kind": "step",
+      "blobPathname": "ai/44837fe5-db2b-4240-9fbe-3474bc718823/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "6c57f093-442d-4e03-aa23-7d1faa2462bd": {
+      "kind": "step",
+      "blobPathname": "ai/6c57f093-442d-4e03-aa23-7d1faa2462bd/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "d7d6e050-845c-4198-95d1-041313ff1a37": {
+      "kind": "step",
+      "blobPathname": "ai/d7d6e050-845c-4198-95d1-041313ff1a37/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "fb7430fd-b164-430b-aa56-8b7959f2da3c": {
+      "kind": "step",
+      "blobPathname": "ai/fb7430fd-b164-430b-aa56-8b7959f2da3c/web.webp",
+      "publicRecipeIds": [
+        "4aa1a876-937f-4ea7-8efc-3fec9b1abbaf"
+      ]
+    },
+    "64749902-4d5a-4677-8957-c40d77978ec1": {
+      "kind": "ingredient",
+      "blobPathname": "ai/64749902-4d5a-4677-8957-c40d77978ec1/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "0e705c16-e40e-41dd-9b03-beb49a39704f": {
+      "kind": "ingredient",
+      "blobPathname": "ai/0e705c16-e40e-41dd-9b03-beb49a39704f/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "f7fb5c6a-1cbb-4f8a-b43f-f0e5b3ebcfa4": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f7fb5c6a-1cbb-4f8a-b43f-f0e5b3ebcfa4/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "29b27712-e68a-485f-b045-b10fe6b4c77c": {
+      "kind": "hero",
+      "blobPathname": "ai/29b27712-e68a-485f-b045-b10fe6b4c77c/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "fe893370-23c6-439c-a133-a2558bb04cee": {
+      "kind": "ingredient",
+      "blobPathname": "ai/fe893370-23c6-439c-a133-a2558bb04cee/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "5fcdb62e-636e-49d9-9cdc-600e63ec4c9a": {
+      "kind": "ingredient",
+      "blobPathname": "ai/5fcdb62e-636e-49d9-9cdc-600e63ec4c9a/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "bfe24873-1a18-41e2-bec9-48da19daf40d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/bfe24873-1a18-41e2-bec9-48da19daf40d/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "0a12f3ac-6ea3-44b8-9f07-bc75704913ff": {
+      "kind": "ingredient",
+      "blobPathname": "ai/0a12f3ac-6ea3-44b8-9f07-bc75704913ff/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "91c1e183-7641-4d4b-af6c-711b8779dfa0": {
+      "kind": "step",
+      "blobPathname": "ai/91c1e183-7641-4d4b-af6c-711b8779dfa0/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "7ad9f089-c311-4dc0-84ef-7c9323811a58": {
+      "kind": "step",
+      "blobPathname": "ai/7ad9f089-c311-4dc0-84ef-7c9323811a58/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "89f55726-a7bb-424a-b990-f840c1d740ba": {
+      "kind": "step",
+      "blobPathname": "ai/89f55726-a7bb-424a-b990-f840c1d740ba/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "c2da803a-2bf6-47e6-b443-78b052cf5dbc": {
+      "kind": "step",
+      "blobPathname": "ai/c2da803a-2bf6-47e6-b443-78b052cf5dbc/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "97f8b9fa-db3c-4077-a1db-b900de88b189": {
+      "kind": "step",
+      "blobPathname": "ai/97f8b9fa-db3c-4077-a1db-b900de88b189/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "cadc51f2-3200-4372-b55a-a543b4be4495": {
+      "kind": "step",
+      "blobPathname": "ai/cadc51f2-3200-4372-b55a-a543b4be4495/web.webp",
+      "publicRecipeIds": [
+        "b9229252-6f52-405b-8966-5a6f232b4f0c"
+      ]
+    },
+    "2f147319-d6a4-443a-8b8e-dbd5bfa47125": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/31347379-694f-48ae-8f1a-7d2f49d78dd9-31b3260c3b24940387b628d5218e1db951e52ace9f2b1efee5c1e62c535b49fe.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "416a02c0-ff96-433a-872b-565e75afc3d7": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/69c3b2b0-02f9-47dd-a299-d69b926e5772-0b6730f2103a6f6f97bf428ee14c7ae72801aac9a858269942e1d7c54e3c1253.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "c24fc2e7-0898-4797-9b78-c5f6f31ed11c": {
+      "kind": "hero",
+      "blobPathname": "ai/c24fc2e7-0898-4797-9b78-c5f6f31ed11c/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "3ef6bcf9-d857-4c68-9eda-918f57ddbda1": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/b596a758-230d-4841-843e-61306766e963-1e07959edbd6de7839984ec0e430a32b996a4381c514b488314403194496b0fe.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "adc12acb-6dbb-4643-b6c1-136492a98531": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/f506b414-0a3e-4fe7-828a-f3238ec1a1f5-2ca611c9d0d72b8b6bc80eaa950e28c593108e9bf08d557e0e2466f6f69d63f0.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "8f14ac2c-2a80-44d9-aa89-b8585a6da8cc": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/f8cfe95e-41ce-459b-a46a-3e99166a927f-128d6145d79b6352720d8f96dc2343b3dd88a10198e3c0f04a92459e5f030ed0.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "62778bfd-7bac-42b1-9a2c-5ee023a3aab0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/8713abe3-347d-4fca-ac17-0fa975b54a7e-583613d5f5ce1a61ee0bf7937ae35acc3d58ff0d460f9fab0255ce4ee34cf9d6.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "ca42b083-f83f-447a-9f68-214109f467eb": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/ae4e241e-6269-4cf2-b79b-ba9d8c1c9357-4f79e9692ffee0e21f451e504ebcd4054cc3135f7178ed730f14e1cc13e1772a.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "979d5727-fa8b-4098-adac-3726fd160094": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/91860028-9369-49ad-80fa-91338b08effc-22f01295ab8f422ff6b34825ed13c35ea4270f9bd78013f1a4c22dee8a09ed35.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "9013f300-6215-4759-89f5-bd95880b57d1": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/2c4020d1-e06f-48d0-aef0-4b3d215eb133-224233b52629fa54a7467fd3642951cb8f3dac7a0858ccf69f5325d7ab9a62db.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "1f708a65-dc60-437b-ae9b-3708c2d197e0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/0372309a-9695-4762-a71f-452111c84136-c28c49ae4dddf289173302079de2d6e768193169416ddf813acfd725300f1257.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "739f60be-0e4b-4c18-8fec-57da85964a3b": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/c59d0012-08d2-48f8-9cc1-dcab9d310490-32ea6ed2f7a3759f713bd347235921b14a30bdf9cbe8d150f3542c1e983420b8.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "a93d9641-b156-466d-80d6-cef8835a77db": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/ce57df4d-e6c5-403e-9c12-a265f4991656-4fe4579b5314126475247d468d59ecad24fba62fa28fc2b3627f0be8472af24d.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "885b161f-3c77-4f0c-8e43-31299b398ace": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/b3900bd0-a785-41e8-85c4-d6067ae4c42b-08cd4fee61eadffaedcf1b3868a6d205a11beefc1390c2566a278f7e3eb4bb23.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "6c5a0d7f-de5e-443f-9ec6-e2800aacef10": {
+      "kind": "step",
+      "blobPathname": "ai/6c5a0d7f-de5e-443f-9ec6-e2800aacef10/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "de9f5051-ce4d-4606-b38a-4502690e281f": {
+      "kind": "step",
+      "blobPathname": "ai/de9f5051-ce4d-4606-b38a-4502690e281f/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "8f96f364-d14f-4617-b830-f72c147f0eb4": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ingredient-background/b549efa4-8514-4a64-a963-f4f39d4f073c/b9c9704ca0ca2dada9cfd8cd0ded83da47ca7454515d4d489219827c0bf11f98/280df1d5-1e30-492e-b7e9-e1d07db7f9a6-a1991370a8a0ff3f033f91664e19854fc220cd9597146efd4d42a8945be80c78.png",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "f8320dbf-f21b-4bea-8f69-bfc16044ac30": {
+      "kind": "step",
+      "blobPathname": "ai/f8320dbf-f21b-4bea-8f69-bfc16044ac30/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "d1aea6f7-8c5c-49ac-a8bd-2c1fc028b9a9": {
+      "kind": "step",
+      "blobPathname": "ai/d1aea6f7-8c5c-49ac-a8bd-2c1fc028b9a9/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "93e8a838-3130-454c-aff1-0fa48169b00f": {
+      "kind": "step",
+      "blobPathname": "ai/93e8a838-3130-454c-aff1-0fa48169b00f/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "94bf021b-bd44-48fd-88f2-22ec2589cef4": {
+      "kind": "step",
+      "blobPathname": "ai/94bf021b-bd44-48fd-88f2-22ec2589cef4/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "37c03787-d2e5-4911-a9ca-44f6d95b2b2c": {
+      "kind": "step",
+      "blobPathname": "ai/37c03787-d2e5-4911-a9ca-44f6d95b2b2c/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "b704cabd-d125-47ec-908d-057ba9db65fb": {
+      "kind": "step",
+      "blobPathname": "ai/b704cabd-d125-47ec-908d-057ba9db65fb/web.webp",
+      "publicRecipeIds": [
+        "b549efa4-8514-4a64-a963-f4f39d4f073c"
+      ]
+    },
+    "5fc5b003-6e6c-46d7-9b5d-cd07771dfb14": {
+      "kind": "ingredient",
+      "blobPathname": "ai/5fc5b003-6e6c-46d7-9b5d-cd07771dfb14/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c",
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "c7d89f55-0068-479b-b792-91aadbd64341": {
+      "kind": "ingredient",
+      "blobPathname": "ai/c7d89f55-0068-479b-b792-91aadbd64341/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "1821501b-bef9-4f8f-99dc-47a319ffe18c": {
+      "kind": "ingredient",
+      "blobPathname": "ai/1821501b-bef9-4f8f-99dc-47a319ffe18c/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "00f76ecd-90fa-4825-bff8-46c02fd456e0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/00f76ecd-90fa-4825-bff8-46c02fd456e0/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "c16a63d0-79d1-48f2-bde6-1915971c0bf3": {
+      "kind": "ingredient",
+      "blobPathname": "ai/c16a63d0-79d1-48f2-bde6-1915971c0bf3/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "c680f980-b209-424e-b2b7-712b3553c031": {
+      "kind": "step",
+      "blobPathname": "ai/c680f980-b209-424e-b2b7-712b3553c031/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "48393eee-3126-42d9-b74f-439e3edc2201": {
+      "kind": "step",
+      "blobPathname": "ai/48393eee-3126-42d9-b74f-439e3edc2201/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "6a97e666-977b-4dad-94f4-2036a6b30190": {
+      "kind": "hero",
+      "blobPathname": "ai/6a97e666-977b-4dad-94f4-2036a6b30190/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "24b5bcba-a4a8-49d4-bcd6-be9d57e48cf2": {
+      "kind": "step",
+      "blobPathname": "ai/24b5bcba-a4a8-49d4-bcd6-be9d57e48cf2/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "02e13f9c-4c0d-43c5-96f4-6dac02926e21": {
+      "kind": "step",
+      "blobPathname": "ai/02e13f9c-4c0d-43c5-96f4-6dac02926e21/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "8fe9b7ba-ec10-4966-97cf-85e3f1313ce5": {
+      "kind": "step",
+      "blobPathname": "ai/8fe9b7ba-ec10-4966-97cf-85e3f1313ce5/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "2c99cb55-abf2-479a-903d-940c82dc1764": {
+      "kind": "step",
+      "blobPathname": "ai/2c99cb55-abf2-479a-903d-940c82dc1764/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "2b73baa5-aa9b-4de1-93a7-e548d1c84686": {
+      "kind": "step",
+      "blobPathname": "ai/2b73baa5-aa9b-4de1-93a7-e548d1c84686/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "43df468d-daaf-461d-916f-e0fe259c3362": {
+      "kind": "step",
+      "blobPathname": "ai/43df468d-daaf-461d-916f-e0fe259c3362/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "9a472730-c9ed-4c3f-a133-263611f1584e": {
+      "kind": "step",
+      "blobPathname": "ai/9a472730-c9ed-4c3f-a133-263611f1584e/web.webp",
+      "publicRecipeIds": [
+        "723141c6-262f-4a3e-9a5f-3550c5526a02"
+      ]
+    },
+    "1ee4a15f-9be8-49ab-8794-972666f40da3": {
+      "kind": "ingredient",
+      "blobPathname": "ai/1ee4a15f-9be8-49ab-8794-972666f40da3/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "f308412e-3b45-418a-b45b-fc0e1c800126": {
+      "kind": "ingredient",
+      "blobPathname": "ai/f308412e-3b45-418a-b45b-fc0e1c800126/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "91d6514c-74dd-4988-8cd6-c2544584823d": {
+      "kind": "ingredient",
+      "blobPathname": "ai/91d6514c-74dd-4988-8cd6-c2544584823d/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "b76b1450-3606-445e-be0b-4ebee16333ee": {
+      "kind": "ingredient",
+      "blobPathname": "ai/b76b1450-3606-445e-be0b-4ebee16333ee/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "620304ed-c6be-4e81-8775-a4b7a7c71a11": {
+      "kind": "ingredient",
+      "blobPathname": "ai/620304ed-c6be-4e81-8775-a4b7a7c71a11/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "a9a0a958-09b3-4eed-8cd9-6894937a1f72": {
+      "kind": "ingredient",
+      "blobPathname": "ai/a9a0a958-09b3-4eed-8cd9-6894937a1f72/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "9dc48561-c9c3-4511-ab5a-c2ce898e48a0": {
+      "kind": "ingredient",
+      "blobPathname": "ai/9dc48561-c9c3-4511-ab5a-c2ce898e48a0/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "0da68b6b-ad7c-4ac6-993c-5309de4b18f9": {
+      "kind": "ingredient",
+      "blobPathname": "ai/0da68b6b-ad7c-4ac6-993c-5309de4b18f9/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "a6d94e65-2393-4be9-93cf-d1ad98290d89": {
+      "kind": "hero",
+      "blobPathname": "ai/a6d94e65-2393-4be9-93cf-d1ad98290d89/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "9fc84c27-d97f-4ea8-8779-caab93969ddc": {
+      "kind": "ingredient",
+      "blobPathname": "ai/9fc84c27-d97f-4ea8-8779-caab93969ddc/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "ed78e6d9-1b1e-454d-8359-deb6faa046f5": {
+      "kind": "ingredient",
+      "blobPathname": "ai/ed78e6d9-1b1e-454d-8359-deb6faa046f5/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "dcd277a8-3cde-4c2f-9cf5-cff415068a7a": {
+      "kind": "ingredient",
+      "blobPathname": "ai/dcd277a8-3cde-4c2f-9cf5-cff415068a7a/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "b38cc498-63fa-40f1-88f3-38592c8a839d": {
+      "kind": "step",
+      "blobPathname": "ai/b38cc498-63fa-40f1-88f3-38592c8a839d/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "e18fb22b-4ba9-4884-82c6-c46ad20deb14": {
+      "kind": "step",
+      "blobPathname": "ai/e18fb22b-4ba9-4884-82c6-c46ad20deb14/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "b5c44cb9-a4a5-419f-b683-f073de2d943d": {
+      "kind": "step",
+      "blobPathname": "ai/b5c44cb9-a4a5-419f-b683-f073de2d943d/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "2707466c-ecb3-4737-9c1a-57c02338340d": {
+      "kind": "step",
+      "blobPathname": "ai/2707466c-ecb3-4737-9c1a-57c02338340d/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "219a1d8a-d1c4-42b3-b0aa-7a77dd6ce6ab": {
+      "kind": "step",
+      "blobPathname": "ai/219a1d8a-d1c4-42b3-b0aa-7a77dd6ce6ab/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "7bd1f262-6bd7-455b-ad30-d9b0642120fa": {
+      "kind": "step",
+      "blobPathname": "ai/7bd1f262-6bd7-455b-ad30-d9b0642120fa/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    },
+    "5ec7799b-89df-48e4-9d57-27c9e21ddecd": {
+      "kind": "step",
+      "blobPathname": "ai/5ec7799b-89df-48e4-9d57-27c9e21ddecd/web.webp",
+      "publicRecipeIds": [
+        "56f00197-7ca6-4bc5-9f89-8912ae7a380c"
+      ]
+    }
+  }
+}

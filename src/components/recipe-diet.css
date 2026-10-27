@@ -1,0 +1,19 @@
+.recipe-diet-badge.recipe-diet-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;vertical-align:middle;color:var(--forest);line-height:1;letter-spacing:0;text-transform:none;font-family:var(--font-manrope),sans-serif;font-size:11px;font-weight:500}
+.recipe-diet-badge>svg{display:block;width:15px;height:15px;flex:none}
+.recipe-diet-badge.has-label{gap:6px}
+.recipe-diet-badge.has-label>span{font:inherit;color:inherit}
+.recipe-diet-title{display:inline-flex;align-items:baseline;gap:8px}
+.recipe-diet-title>.recipe-diet-badge{align-self:center}
+.diet-filters{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:22px}
+.diet-filter-label{font-size:11px;margin-right:6px;color:#5f6b5a}
+.diet-filters .category-chip{border:1px solid var(--line);font-size:11px;padding-inline:13px;min-height:44px}
+.diet-filters .category-chip.selected{border-color:var(--forest)}
+.diet-filters .category-chip>svg{width:15px;height:15px}
+.recipe-card-diet{position:absolute;right:17px;bottom:15px;display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;background:#fcfaf2df}
+.hub-recipe-diet{display:flex;align-items:center;gap:9px}
+.detail-diet{margin-top:16px}
+.hero-caption .recipe-diet-title{gap:7px;font:inherit}
+.today-suggestions a>.recipe-diet-badge{margin-left:auto}
+@media(max-width:700px){.diet-filters{gap:6px;margin-bottom:18px}.diet-filter-label{width:100%;margin:0 0 2px}.diet-filters .category-chip{font-size:10px;padding-inline:11px}.recipe-card-diet{right:12px;bottom:10px}}
+@media(max-width:460px){.diet-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.diet-filter-label{grid-column:1/-1}.diet-filters .category-chip{justify-content:center}}
+@media print{.recipe-diet-badge.recipe-diet-badge{color:#17291d}.recipe-diet-badge>svg{width:12px;height:12px}.detail-diet{margin-top:8px}}

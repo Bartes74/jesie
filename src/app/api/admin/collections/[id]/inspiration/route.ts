@@ -1,0 +1,25 @@
+import { adminResponse } from '@/server/http/admin';
+import { requireAdmin, getAuthOrigin, AdminAccessError } from '@/server/auth';
+import { collectionFailure, CollectionError } from '@/server/collections/errors';
+import { getCollection } from '@/server/collections/store';
+import { inspirationMaximumBytes, saveCollectionAsset } from '@/server/collections/media';
+import { readBounded } from '@/server/ai/image-provider';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireAdmin(request.headers);
+    if (request.headers.get('origin') !== getAuthOrigin() || request.headers.get('sec-fetch-site') === 'cross-site') throw new AdminAccessError('Niedozwolone pochodzenie żądania.', 403);
+    const type = request.headers.get('content-type') ?? '';
+    if (!type.startsWith('multipart/form-data;')) throw new AdminAccessError('Wybierz plik obrazu.', 415);
+    const maximum = inspirationMaximumBytes + 65536;
+    if (Number(request.headers.get('content-length') ?? 0) > maximum) throw new CollectionError(413, 'IMAGE_TOO_LARGE', 'Inspiracja może mieć najwyżej 10 MB.');
+    const { id } = await params; await getCollection(id);
+    const bytes = await readBounded(request.body, maximum);
+    const form = await new Request(request.url, { method: 'POST', headers: { 'Content-Type': type }, body: new Uint8Array(bytes) }).formData();
+    const files = form.getAll('file');
+    if (files.length !== 1 || !(files[0] instanceof File)) throw new CollectionError(422, 'IMAGE_REQUIRED', 'Wybierz jeden obraz JPEG, PNG lub WebP.');
+    const asset = await saveCollectionAsset({ collectionId: id, kind: 'inspiration', bytes: Buffer.from(await files[0].arrayBuffer()) });
+    return adminResponse({ assetId: asset.id, src: `/api/admin/collections/${id}/assets/${asset.id}` }, 201);
+  } catch (error) { return collectionFailure(error); }
+}

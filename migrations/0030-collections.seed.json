@@ -1,0 +1,62 @@
+[
+  {
+    "id": "quick-dinners",
+    "slug": {
+      "pl": "obiady-do-30-minut",
+      "en": "dinners-in-30-minutes"
+    },
+    "title": {
+      "pl": "Obiady do 30 minut",
+      "en": "Dinners in 30 minutes"
+    },
+    "description": {
+      "pl": "Kiedy na gotowanie masz pół godziny. Wybierz danie według pełnego czasu przygotowania, sprawdź składniki i dopasuj liczbę porcji do swojego stołu.",
+      "en": "For days when you have half an hour to cook. Choose a dish by its total preparation time, check the ingredients and adjust the servings to your table."
+    }
+  },
+  {
+    "id": "one-pot",
+    "slug": {
+      "pl": "jedna-patelnia-lub-garnek",
+      "en": "one-pot-and-one-pan"
+    },
+    "title": {
+      "pl": "Jedna patelnia lub garnek",
+      "en": "One pot or one pan"
+    },
+    "description": {
+      "pl": "Mniej naczyń, więcej czasu przy stole. Dania wybrane przez redakcję, których główne składniki przygotujesz razem w jednej patelni lub garnku.",
+      "en": "Less washing-up, more time at the table. Dishes selected by the editors whose main ingredients cook together in one pot or pan."
+    }
+  },
+  {
+    "id": "pantry",
+    "slug": {
+      "pl": "gotowanie-z-tego-co-masz",
+      "en": "cook-with-what-you-have"
+    },
+    "title": {
+      "pl": "Gotowanie z tego, co masz",
+      "en": "Cook with what you have"
+    },
+    "description": {
+      "pl": "Zacznij od produktów, które czekają w kuchni. Te przepisy pomagają wykorzystać dostępne składniki; brakujące produkty i zaakceptowane zamienniki sprawdzisz przed gotowaniem.",
+      "en": "Start with the food already in your kitchen. These recipes help you use available ingredients; check missing items and approved substitutions before cooking."
+    }
+  },
+  {
+    "id": "seasonal",
+    "slug": {
+      "pl": "sezonowe-obiady-i-zupy",
+      "en": "seasonal-dinners-and-soups"
+    },
+    "title": {
+      "pl": "Sezonowe obiady i zupy",
+      "en": "Seasonal dinners and soups"
+    },
+    "description": {
+      "pl": "Pomysły na obiad z sezonowych produktów dostępnych w Polsce. Przy każdym daniu sprawdź czas, sprzęt i sposób przygotowania, żeby wybrać przepis pasujący do Twojego dnia.",
+      "en": "Dinner ideas using seasonal produce available in Poland. Check the time, equipment and method for each dish to find a recipe that fits your day."
+    }
+  }
+]

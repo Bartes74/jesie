@@ -1,0 +1,36 @@
+# Dependencies and generated output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.swc/
+.workflow-data/
+.playwright-cli/
+src/app/.well-known/workflow/
+output/
+artifacts/
+coverage/
+
+# Credentials and machine-specific configuration
+.vercel/
+.env*
+!.env.example
+CLAUDE.local.md
+.claude/settings.local.json
+.DS_Store
+*.log
+*.private
+*.dump
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Recovery archives and private source material are provisioned outside Git.
+private-media/
+IMG_3411.JPG
+private-data/**
+# These two pinned, anonymous public captures are source/test dependencies.
+!private-data/public-recovery/
+!private-data/public-recovery/recipes.json
+!private-data/public-recovery/media.json

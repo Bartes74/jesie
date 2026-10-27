@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "fra1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/trends",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/trends/publish",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/media",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/public-snapshot",
+      "schedule": "30 * * * *"
+    }
+  ]
+}

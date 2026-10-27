@@ -1,0 +1,22 @@
+import type { Recipe, Localised } from './recipes';
+import type { MediaTile } from './recipe-media';
+import type { HeroPresentation } from './hero-presentation';
+import type { RecipeDietId } from './recipe-diet';
+
+export const reviewKeys = ['pl', 'en', 'quantities', 'method', 'photos', 'sources'] as const;
+export type ReviewKey = typeof reviewKeys[number];
+export const reviewLabels: Record<ReviewKey, string> = { pl: 'Treść polska', en: 'Treść angielska', quantities: 'Składniki i ilości', method: 'Kroki i czasy', photos: 'Fotografie', sources: 'Pochodzenie' };
+export type EditorialStatus = 'draft' | 'in_review' | 'approved' | 'archived';
+export type PublicationStatus = 'never_published' | 'published' | 'unpublished';
+export type SourceReference = { id: string; title: string; url: string };
+export type StepPhotoOmission = { signature: string; reason: Localised };
+export type RecipePhotos = { ingredients: Record<string, MediaTile>; steps: Record<string, MediaTile>; omittedSteps?: Record<string, StepPhotoOmission> };
+export type KitchenTest = { date: string; tester: string; notes: string };
+export type EditorialContent = { recipe: Recipe; originalText: string; author: string; sources: SourceReference[]; photos: RecipePhotos; kitchenTest?: KitchenTest; aiPhotography?: { regenerate?: true; heroRetakeVersion?: 'vessel-cutout-v1' | 'complete-composition-v1'; automaticHeroCutout?: { sourceJobId: string; workflowRunId: string }; heroMaskPromptVersion?: 'vessel-noun-v1' | 'vessel-contents-v2'; heroPresentationOverride?: HeroPresentation; ingredientStyleProfile?: string; heroStyleProfile?: string; recipeProposalVersion?: string; recipePresentationVersion?: string; recipeResearchVersion?: string; recipeTimingVersion?: string; recipeDietVersion?: string; recipeDietTarget?: RecipeDietId; photoBatchMode?: 'ingredients-white' | 'ingredients-paper'; ingredientEditSource?: { sourceJobId: string; sourceAssetId: string; sha256: string; oldSourceBlobPath: string; oldOriginalBlobPath: string | null } } };
+export type ReviewChecks = Record<ReviewKey, boolean>;
+export type PublicationIssue = { field: string; message: string };
+export type RecipeSummary = { id: string; title: Localised; image: string; category: string; totalMinutes: number; editorialStatus: EditorialStatus; publicationStatus: PublicationStatus; deletedAt: string | null; revision: number; publishedRevision: number | null; updatedAt: string; updatedBy: string; languages: { pl: boolean; en: boolean }; hasUnpublishedChanges: boolean };
+export type RecipeVersion = { revision: number; createdAt: string; createdBy: string; title: string; reason: string };
+export type EditorialRecord = { id: string; revision: number; content: EditorialContent; editorialStatus: EditorialStatus; publicationStatus: PublicationStatus; deletedAt: string | null; publishedRevision: number | null; updatedAt: string; updatedBy: string; checks: ReviewChecks; issues: PublicationIssue[]; versions: RecipeVersion[] };
+export type EditorialActor = { id: string; name: string; email: string; role: 'owner' | 'admin' | 'trend_worker' };
+export type EditorialAction = 'review' | 'approve' | 'publish' | 'unpublish' | 'archive' | 'restore' | 'restore_deleted' | 'duplicate' | 'checks' | 'approve_and_publish';
