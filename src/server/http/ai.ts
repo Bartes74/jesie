@@ -20,4 +20,5 @@ export const aiActionInput = z.discriminatedUnion('action', [
   z.object({ action: z.literal('cancel') }).strict(),
   z.object({ action: z.literal('resume') }).strict(),
   z.object({ action: z.literal('recover') }).strict(),
+  z.object({ action: z.literal('recheck') }).strict(),
 ]);

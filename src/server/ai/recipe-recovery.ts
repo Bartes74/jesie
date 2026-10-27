@@ -79,7 +79,7 @@ export async function admitRecipeRepair(parentId: string, generation: number, wo
 }
 
 /** Explicit recovery first revalidates the old receipt. A failed job can never POST again. */
-export async function beginRecipeResultRecovery(id: string, actor: EditorialActor, evidence?: RecipeRecoveryEvidence) {
+export async function beginRecipeResultRecovery(id: string, actor: EditorialActor, evidence?: RecipeRecoveryEvidence, options: { existingOnly?: boolean } = {}) {
   return getDb().transaction(async tx => {
     await budgetLock(tx);
     await trustedActor(tx, actor.id);
@@ -94,6 +94,8 @@ export async function beginRecipeResultRecovery(id: string, actor: EditorialActo
       throw new AiError(409, 'STALE_RESULT', 'Przepis zmienił się od rozpoczęcia generowania. Zachowano wynik; opracuj bieżącą wersję.');
     const entry = readable.entry;
     if (job.result && ['ready', 'applied'].includes(job.status)) return { job: jobDto(job), generation: entry?.generation ?? 1, dispatch: false };
+    if (options.existingOnly && !job.providerRequestId)
+      throw new AiError(409, 'RECIPE_RECOVERY_RECEIPT_REQUIRED', 'Brak zapisanego wyniku do sprawdzenia. Nie uruchomiono nowej generacji.');
     // The cap limits separately billed repair children, not reading an accepted
     // receipt again. Local validation may have been corrected since this result
     // failed; admitRecipeRepair still prevents a third repair after this read.

@@ -20,6 +20,31 @@ test('three exclusive categories classify the base ingredients, without treating
   assert.equal(getRecipeDiet(recipe('plums', 'honey')), 'vegetarian');
 });
 
+test('Polish peanut names and inflections need no ingredient verification', () => {
+  for (const name of ['niesolone, nieprażone orzeszki ziemne bez skórki', 'orzeszek ziemny',
+    'orzeszka ziemnego', 'orzeszkowi ziemnemu', 'orzeszkiem ziemnym', 'orzeszku ziemnym',
+    'orzeszków ziemnych', 'orzeszkom ziemnym', 'orzeszkami ziemnymi', 'orzeszkach ziemnych']) {
+    const item = ingredient('raw blanched peanuts', name);
+    assert.deepEqual(unrecognisedRecipeIngredientNames([item]), [], name);
+    const inspected = inspectRecipeDiet({ ingredients: [item] });
+    assert.equal(inspected.inferredDiet, 'vegan', name);
+    assert.equal(inspected.uncertainIngredients.length, 0, name);
+  }
+  assert.equal(inspectRecipeDiet(recipe('orzeszki')).inferredDiet, null);
+});
+
+test('recognising peanuts cannot override animal ingredients or an unspecified compound', () => {
+  for (const name of ['orzeszki ziemne ze smalcem', 'orzeszki ziemne z żelatyną']) {
+    assert.equal(inspectRecipeDiet(recipe(name)).inferredDiet, 'meat', name);
+  }
+  assert.equal(inspectRecipeDiet(recipe('orzeszki ziemne z miodem')).inferredDiet, 'vegetarian');
+  for (const name of ['sos z orzeszków ziemnych', 'pasta z orzeszków ziemnych']) {
+    const inspected = inspectRecipeDiet(recipe(name));
+    assert.equal(inspected.inferredDiet, null, name);
+    assert.equal(inspected.uncertainIngredients[0].kind, 'ambiguous-composition', name);
+  }
+});
+
 test('meat category includes fish, seafood, meat stocks, fats, gelatin and animal rennet', () => {
   for (const name of ['sea bass', 'salmon', 'tuna', 'prawns', 'fish sauce', 'oyster sauce', 'chicken stock',
     'beef broth', 'pork lard', 'gelatin', 'gelatine', 'animal rennet', 'calf rennet', 'pepsin',

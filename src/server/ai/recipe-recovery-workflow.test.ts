@@ -10,6 +10,34 @@ function load(file: string, imports: Record<string, unknown>) {
   runInNewContext(code, { exports, require: (path: string) => { assert.ok(Object.hasOwn(imports, path), path); return imports[path]; } });
   return exports;
 }
+
+test('explicit recipe recheck reads the same receipt with paid ingredient research disabled and never admits repairs', async () => {
+  const calls: string[] = []; let reads = 0;
+  const exports = load('../../workflows/recipe-recheck.ts', {
+    workflow: { getWorkflowMetadata: () => ({ workflowRunId: 'recheck' }), sleep: async () => { calls.push('wait'); } },
+    '@/server/ai/steps': {
+      claimGenerationRecovery: async () => { calls.push('claim'); return true; },
+      pollGeneration: async (id: string, existingOnly: boolean) => { assert.equal(id, 'retained'); assert.equal(existingOnly, true); calls.push('read'); return ++reads === 2; },
+      expireGeneration: async () => { calls.push('retain'); },
+    },
+  });
+  await exports.recipeRecheck('retained', 3);
+  assert.deepEqual(calls, ['claim', 'read', 'wait', 'read']);
+});
+
+test('a duplicate recheck never reads, and exhausted GET retries preserve the original receipt', async () => {
+  for (const duplicate of [true, false]) {
+    const calls: string[] = [];
+    const exports = load('../../workflows/recipe-recheck.ts', {
+      workflow: { getWorkflowMetadata: () => ({ workflowRunId: 'recheck' }), sleep: async () => {} },
+      '@/server/ai/steps': { claimGenerationRecovery: async () => !duplicate,
+        pollGeneration: async () => { calls.push('read'); throw new Error('GET retries exhausted'); },
+        expireGeneration: async () => { calls.push('retain'); } },
+    });
+    await exports.recipeRecheck('retained', 3);
+    assert.deepEqual(calls, duplicate ? [] : ['read', 'retain']);
+  }
+});
 function generation(options: { duplicate?: boolean; repairs?: number; transient?: boolean; cutout?: 'owned' | 'other-worker'; cutoutFailure?: boolean; cutoutAdmissionFailure?: boolean; cutoutExpiryFailure?: boolean } = {}) {
   const events: string[] = []; let next = 0;
   const exports = load('../../workflows/ai-generation.ts', {

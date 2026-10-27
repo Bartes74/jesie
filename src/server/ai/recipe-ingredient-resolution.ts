@@ -50,7 +50,7 @@ function unresolved(ingredient: Ingredient, row?: Verification | null): Provider
 }
 
 /** Re-check one retained recipe response; each unknown identity has at most one durable paid lookup. */
-export function recipeIngredientResolver(input: EditorialContent, deps: IngredientResolutionDependencies) {
+export function recipeIngredientResolver(input: EditorialContent, deps: IngredientResolutionDependencies, options: { existingOnly?: boolean } = {}) {
   return async (raw: unknown): Promise<RecipeIngredientResolution> => {
     const empty: RecipeIngredientResolution = { pending: false, dictionary: new Map(), notes: [], sources: [] };
     // Malformed recipe payloads must follow the normal validator, without buying research.
@@ -95,6 +95,8 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
         continue;
       }
       if (!row) {
+        if (options.existingOnly) throw unresolved(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
+          errorMessage: 'Brak zapamiętanego potwierdzenia tej nazwy. Sprawdzanie zapisanego wyniku nie uruchamia nowych płatnych badań składników.' });
         try { await deps.checkPermission(); }
         catch { throw unresolved(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
           errorMessage: 'Szkic lub stan generowania zmienił się. Dodatkowa weryfikacja nie została wysłana.' }); }
@@ -135,6 +137,7 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
         }
       }
       if (row.status === 'submitting') {
+        if (options.existingOnly) throw unresolved(ingredient, row);
         await deps.pending(ingredient.name.pl || ingredient.name.en);
         // claim() expires an abandoned submit without ever submitting it again.
         await deps.claim(query);
@@ -149,7 +152,7 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
   };
 }
 
-export async function resolveRecipeIngredients(job: { id: string; recipeId: string; input: EditorialContent }, raw: unknown) {
+export async function resolveRecipeIngredients(job: { id: string; recipeId: string; input: EditorialContent }, raw: unknown, options: { existingOnly?: boolean } = {}) {
   const store = await import('./ingredient-dictionary-store');
   const provider = await import('./ingredient-verification-provider');
   const jobs = await import('./store');
@@ -172,5 +175,5 @@ export async function resolveRecipeIngredients(job: { id: string; recipeId: stri
         : store.failVerification(row.key, owner, { code: error.code, message: error.message }, cost);
     },
     pending: name => jobs.markIngredientVerificationPending(job.id, name),
-  })(raw);
+  }, options)(raw);
 }

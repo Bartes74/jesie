@@ -80,7 +80,7 @@ export function GuidedRecipeEditor({ initialRecipe, autoGenerate = false }: { in
   const router = useRouter();
   const [state, setState] = useState<Preparation>({ recipe: initialRecipe, textJob: null, photoBatch: null, contentApproved: false, blockingGeneration: false, photoBatchCompatible: false });
   const [loaded, setLoaded] = useState(false);
-  const [busy, setBusy] = useState<Action | 'refresh' | 'recover' | 'resume' | 'save_instructions' | null>(null);
+  const [busy, setBusy] = useState<Action | 'refresh' | 'recover' | 'recheck' | 'resume' | 'save_instructions' | null>(null);
   const [error, setError] = useState('');
   const [actionIssues, setActionIssues] = useState<PublicationIssue[]>([]);
   const [notice, setNotice] = useState('');
@@ -311,7 +311,7 @@ export function GuidedRecipeEditor({ initialRecipe, autoGenerate = false }: { in
     finally { busyRef.current = false; setBusy(null); }
   };
 
-  const recoverText = async (action: 'recover' | 'resume') => {
+  const recoverText = async (action: 'recover' | 'recheck' | 'resume') => {
     const current = stateRef.current.textJob;
     if (busyRef.current || !current) return;
     busyRef.current = true; setBusy(action); setError(''); setNotice(''); setActionIssues([]);
@@ -323,7 +323,7 @@ export function GuidedRecipeEditor({ initialRecipe, autoGenerate = false }: { in
         throw new Error(response.status === 401 ? 'Sesja wygasła. Zaloguj się ponownie.' : body.error || 'Nie udało się potwierdzić stanu zgłoszenia. Odśwież stan i sprawdź ponownie.');
       }
       await load();
-      setNotice('Stan przygotowania jest aktualny. Gotowy przepis pokażemy do przeczytania i akceptacji.');
+      setNotice(action === 'recheck' ? 'Uruchomiono sprawdzanie zapisanego wyniku. Gotowy przepis pokażemy do przeczytania i akceptacji.' : 'Stan przygotowania jest aktualny. Gotowy przepis pokażemy do przeczytania i akceptacji.');
     } catch (err) { setError(err instanceof Error ? safeError(err.message) : 'Nie udało się sprawdzić zgłoszenia.'); }
     finally { busyRef.current = false; setBusy(null); }
   };
@@ -368,7 +368,7 @@ export function GuidedRecipeEditor({ initialRecipe, autoGenerate = false }: { in
         <div className="guided-stage-heading"><span className="guided-stage-number">01</span><div><h2 id="guided-content-heading">Sprawdź treść przepisu</h2><p>System uzupełnia przepis w obu językach na podstawie researchu i Twoich wskazówek.</p></div>{contentApproved && <span className="guided-approved"><CheckCircle2 size={17} />Treść zaakceptowana</span>}</div>
         {!loaded && <p className="guided-working" role="status"><LoaderCircle size={19} className="admin-spinner" />Wczytuję stan przygotowania…</p>}
         {generatingText && !textJob?.recovery && <div className="guided-working" role="status"><LoaderCircle size={21} className="admin-spinner" /><div><strong>Przygotowujemy przepis</strong><p>Trwa research i uzupełnianie treści. Możesz opuścić tę stronę i wrócić później.</p></div></div>}
-        {textNeedsAttention && textJob && <JobRecoveryNotice job={textJob} currentRevision={record.revision} editHref={`${recipeUrl}?advanced=1`} disabled={frozen || generatingText || generatingPhotos} busy={busy === 'recover' || busy === 'resume'} onRecover={() => void recoverText('recover')} onResume={() => void recoverText('resume')} onRefresh={() => void refresh()} onEdit={textJob.recovery?.status === 'exhausted' ? () => setInstructions({ title: recipe.title.pl, originalText: record.content.originalText, expectedRevision: record.revision }) : undefined} />}
+        {textNeedsAttention && textJob && <JobRecoveryNotice job={textJob} currentRevision={record.revision} editHref={`${recipeUrl}?advanced=1`} disabled={frozen || generatingText || generatingPhotos} busy={busy === 'recover' || busy === 'recheck' || busy === 'resume'} onRecover={() => void recoverText('recover')} onRecheck={() => void recoverText('recheck')} onResume={() => void recoverText('resume')} onRefresh={() => void refresh()} onEdit={textJob.recovery?.status === 'exhausted' ? () => setInstructions({ title: recipe.title.pl, originalText: record.content.originalText, expectedRevision: record.revision }) : undefined} />}
         {instructions && <form className="guided-instructions-form" onSubmit={event => { event.preventDefault(); void saveInstructions(); }}><h3>Doprecyzuj wskazówki</h3><p>Uzupełnij brakujące informacje z listy powyżej. Zapisanie wskazówek nie uruchamia generowania; przygotowanie nowej treści rozpoczniesz osobnym przyciskiem.</p><label className="admin-field">Tytuł przepisu<input required maxLength={200} value={instructions.title} disabled={Boolean(busy)} onChange={event => setInstructions({ ...instructions, title: event.target.value })} /></label><label className="admin-field">Opis lub pełny przepis<textarea rows={9} maxLength={100000} value={instructions.originalText} disabled={Boolean(busy)} onChange={event => setInstructions({ ...instructions, originalText: event.target.value })} /></label><div className="guided-stage-actions"><button type="button" className="admin-button is-secondary" disabled={Boolean(busy)} onClick={() => setInstructions(null)}>Zamknij</button><button type="submit" className="admin-button" disabled={frozen || active || !instructions.title.trim()}>{busy === 'save_instructions' && <LoaderCircle size={16} className="admin-spinner" />}Zapisz wskazówki</button></div></form>}
         {textJob?.status === 'ready' && textJob.baseRevision !== record.revision && <div className="admin-notice" role="status"><AlertCircle size={18} /><div><p>Gotowa propozycja dotyczy wcześniejszej wersji przepisu. Nie zastąpiliśmy Twoich zmian.</p><Link className="admin-text-link" href={`/admin/ai/${encodeURIComponent(textJob.id)}`}>Porównaj propozycję z bieżącą treścią <ArrowRight size={15} /></Link></div></div>}
         {hasText && <div className="admin-locale-tabs" aria-label="Język przeglądu treści"><button type="button" aria-pressed={contentLocale === 'pl'} disabled={Boolean(correction)} onClick={() => setContentLocale('pl')}>Polski</button><button type="button" aria-pressed={contentLocale === 'en'} disabled={Boolean(correction)} onClick={() => setContentLocale('en')}>English</button></div>}

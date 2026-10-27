@@ -1,7 +1,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { config } from 'dotenv';
 import { Pool } from 'pg';
 import type { EditorialActor, EditorialContent } from '@/lib/editorial-types';
@@ -33,8 +33,8 @@ before(async () => {
   pool = new Pool({ connectionString: url.toString(), max: 3, connectionTimeoutMillis: 20_000, query_timeout: 30_000 });
   await pool.query('CREATE TABLE auth_user(id text PRIMARY KEY,name text NOT NULL,email text NOT NULL UNIQUE,email_verified boolean NOT NULL DEFAULT false,image text,role text NOT NULL DEFAULT \'admin\',disabled boolean NOT NULL DEFAULT false,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now())');
   await pool.query("INSERT INTO auth_user(id,name,email,role) VALUES('owner','Owner','owner@example.invalid','owner'),('disabled','Disabled','disabled@example.invalid','admin')");
-  for (const migration of ['0001-editorial','0002-ai','0003-trends','0004-trend-research','0005-trend-manual-runs','0006-ingredient-reuse','0007-local-photo-corrections','0008-ai-photo-batches','0009-ai-budget-settings','0010-daily-publication','0011-seo-discovery','0013-reviewed-publication-guard','0014-seo-workflows','0015-recipe-trash','0017-publication-plan','0018-content-approval','0019-simplified-daily-automation','0020-manual-automation-takeover','0021-recipe-result-recovery','0026-remove-spending-limits','0027-manual-review-workflow','0028-ingredient-dictionary','0029-ingredient-evidence-recheck'])
-    await pool.query(await readFile(`migrations/${migration}.sql`, 'utf8'));
+  for (const migration of (await readdir('migrations')).filter(file => /^\d{4}-.*\.sql$/.test(file)).sort())
+    await pool.query(await readFile(`migrations/${migration}`, 'utf8'));
   Object.assign(process.env, { OPENAI_API_KEY: 'test-unused', FAL_KEY: 'test-unused', BLOB_READ_WRITE_TOKEN: 'test-unused', CRON_SECRET: 'test-unused', AI_RECIPE_MODEL: 'gpt-6.1-sol', AI_IMAGE_MODEL: 'openai/gpt-image-2.5/sunburst/text-to-image', AI_TREND_MODEL: 'gpt-6.1-sol', AI_DAILY_LIMIT_USD: '100', AI_MONTHLY_LIMIT_USD: '100', AI_PILOT_LIMIT_USD: '100' });
   originalFetch = globalThis.fetch; globalThis.fetch = async () => { throw new Error('Paid/provider HTTP is forbidden in this test.'); };
 });
@@ -84,6 +84,40 @@ test('legacy invalid first re-reads its existing receipt and can finish without 
   const finished = await finishRecipe(job.id, recipe.content, {});
   assert.equal(finished.status, 'ready'); assert.equal(finished.chargedUsd, '0.71123000'); assert.equal(finished.costBasis, 'usage');
   assert.deepEqual(await ledger(job.id), bill); assert.equal((await pool.query('SELECT count(*)::int n FROM ai_job')).rows[0].n, 1);
+  assert.equal((await getRecipe(recipe.id)).publicationStatus, 'never_published');
+});
+
+test('existing-only recovery rejects an unsent repair child without consuming its attempt or lease', async () => {
+  const { job } = await fixture(); await invalid(job.id);
+  const child = await admitRecipeRepair(job.id, 1, 'original-worker');
+  assert.equal(child.attempt, 1);
+  const before = await getJobForExecution(child.jobId), bill = await ledger(child.jobId);
+  const entry = (await pool.query('SELECT attempt,generation,workflow_run_id,dispatch_claimed_at FROM ai_recipe_recovery WHERE job_id=$1', [child.jobId])).rows[0];
+  await assert.rejects(beginRecipeResultRecovery(job.id, actor, undefined, { existingOnly: true }),
+    error => error instanceof Error && 'code' in error && error.code === 'RECIPE_RECOVERY_RECEIPT_REQUIRED');
+  const unchanged = await getJobForExecution(child.jobId);
+  assert.equal(unchanged.status, 'queued'); assert.equal(unchanged.providerRequestId, null);
+  assert.equal(unchanged.chargedUsd, before.chargedUsd);
+  assert.deepEqual((await pool.query('SELECT attempt,generation,workflow_run_id,dispatch_claimed_at FROM ai_recipe_recovery WHERE job_id=$1', [child.jobId])).rows[0], entry);
+  assert.deepEqual(await ledger(child.jobId), bill);
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_job')).rows[0].n, 2);
+});
+
+test('existing-only recovery rechecks the same receipt once per lease with unchanged job, charge and repair count', async () => {
+  const { recipe, job } = await fixture(); await invalid(job.id);
+  const before = await getJobForExecution(job.id), bill = await ledger(job.id);
+  const resumed = await beginRecipeResultRecovery(job.id, actor, undefined, { existingOnly: true });
+  assert.equal(resumed.dispatch, true); assert.equal(resumed.job.id, job.id);
+  assert.equal(resumed.job.providerRequestId, before.providerRequestId);
+  const duplicate = await beginRecipeResultRecovery(job.id, actor, undefined, { existingOnly: true });
+  assert.equal(duplicate.dispatch, false); assert.equal(duplicate.generation, resumed.generation);
+  assert.equal((await claimSubmission(job.id)).shouldSubmit, false);
+  const ready = await finishRecipe(job.id, recipe.content, {});
+  assert.equal(ready.status, 'ready'); assert.equal(ready.chargedUsd, before.chargedUsd);
+  assert.deepEqual(await ledger(job.id), bill);
+  const entry = (await pool.query('SELECT attempt,generation FROM ai_recipe_recovery WHERE job_id=$1', [job.id])).rows[0];
+  assert.equal(entry.attempt, 0); assert.equal(entry.generation, resumed.generation);
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_job')).rows[0].n, 1);
   assert.equal((await getRecipe(recipe.id)).publicationStatus, 'never_published');
 });
 

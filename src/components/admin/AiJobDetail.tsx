@@ -75,7 +75,7 @@ export function AiJobDetail({ jobId }: { jobId: string }) {
   const [record, setRecord] = useState<EditorialRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [busy, setBusy] = useState<'apply' | 'cancel' | 'resume' | 'recover' | 'repair' | null>(null);
+  const [busy, setBusy] = useState<'apply' | 'cancel' | 'resume' | 'recover' | 'recheck' | 'repair' | null>(null);
   const [error, setError] = useState('');
   const [recordError, setRecordError] = useState('');
   const [notice, setNotice] = useState('');
@@ -140,7 +140,7 @@ export function AiJobDetail({ jobId }: { jobId: string }) {
     setRefreshing(true); setError('');
     try { await reload(); setConflict(false); setAcknowledgeStale(false); } catch (err) { setError(errorText(err)); } finally { setRefreshing(false); }
   };
-  const action = async (name: 'apply' | 'cancel' | 'resume' | 'recover') => {
+  const action = async (name: 'apply' | 'cancel' | 'resume' | 'recover' | 'recheck') => {
     if (busyRef.current || photoBusyRef.current || !job || (name === 'apply' && !record)) return;
     busyRef.current = true; setBusy(name); setError(''); setNotice('');
     try {
@@ -157,7 +157,7 @@ export function AiJobDetail({ jobId }: { jobId: string }) {
         ...(job.manualPhotoComposition ? { manualPhotoComposition: true } : {}) } : body.job);
       if (body.recipe) setRecord(body.recipe);
       setConflict(false); setAcknowledgeStale(false);
-      setNotice(name === 'apply' ? 'Wynik zapisano jako nową wersję szkicu. Otwórz edytor, aby sprawdzić przepis.' : name === 'cancel' ? 'Zapisano prośbę o anulowanie. Koszt rozpoczętej pracy może pozostać w rozliczeniu.' : name === 'recover' ? 'Sprawdzono zapisany wynik. Stan przygotowania jest aktualny.' : job.canRestorePhotoContents ? 'Zachowane zdjęcie przekazano do przywrócenia zawartości naczynia. Gotowy kadr sprawdzisz i osobno zastosujesz do szkicu.' : 'Sprawdzono istniejące zgłoszenie u dostawcy.');
+      setNotice(name === 'apply' ? 'Wynik zapisano jako nową wersję szkicu. Otwórz edytor, aby sprawdzić przepis.' : name === 'cancel' ? 'Zapisano prośbę o anulowanie. Koszt rozpoczętej pracy może pozostać w rozliczeniu.' : name === 'recover' || name === 'recheck' ? 'Uruchomiono sprawdzanie zapisanego zgłoszenia. Postęp odświeża się automatycznie.' : job.canRestorePhotoContents ? 'Zachowane zdjęcie przekazano do przywrócenia zawartości naczynia. Gotowy kadr sprawdzisz i osobno zastosujesz do szkicu.' : 'Sprawdzono istniejące zgłoszenie u dostawcy.');
     } catch (err) { setError(errorText(err)); } finally { busyRef.current = false; setBusy(null); }
   };
   const repair = async () => {
@@ -272,7 +272,7 @@ export function AiJobDetail({ jobId }: { jobId: string }) {
     {notice && <div className="admin-notice is-success" role="status"><CheckCircle2 size={18} /><span>{notice}</span></div>}
     <div className="admin-ai-detail-grid"><div className="admin-ai-result-column">
       {!feedback && <section className={'admin-ai-progress is-' + job.status} aria-live="polite"><span className="admin-ai-progress-icon">{isActive ? <LoaderCircle className="admin-spinner" size={26} /> : job.status === 'applied' || job.status === 'ready' ? <Check size={26} /> : job.status === 'cancelled' ? <X size={26} /> : <AlertCircle size={26} />}</span><div><h2>{statuses[job.status]}</h2><p>{statusDescription[job.status]}</p></div></section>}
-      <JobRecoveryNotice job={job} currentRevision={record?.revision} disabled={controlsBusy || refreshing || Boolean(recordError) || Boolean(record?.deletedAt) || record?.editorialStatus === 'archived'} busy={busy === 'recover' || busy === 'resume'} onRecover={() => void action('recover')} onResume={() => void action('resume')} onRefresh={() => void refresh()} />
+      <JobRecoveryNotice job={job} currentRevision={record?.revision} disabled={controlsBusy || refreshing || Boolean(recordError) || Boolean(record?.deletedAt) || record?.editorialStatus === 'archived'} busy={busy === 'recover' || busy === 'recheck' || busy === 'resume'} onRecover={() => void action('recover')} onRecheck={() => void action('recheck')} onResume={() => void action('resume')} onRefresh={() => void refresh()} />
       {job.photoRecovery && <p className="admin-ai-help">Osobne wycięcie tła: {job.photoRecovery.costBasis === 'usage' && job.photoRecovery.chargedUsd !== null ? usd(job.photoRecovery.chargedUsd) : 'koszt oczekuje na potwierdzenie'}. Rozliczenie źródłowej fotografii znajdziesz obok.</p>}
       {job.photoRecovery?.status === 'failed' && job.photoRecovery.errorCode === 'AI_MASK_NOT_FOUND' && <p className="admin-ai-help" role="status">Automatyczne wycięcie tła nie zwróciło maski. Fotografia jest zachowana; poniżej możesz obejrzeć oryginał i sprawdzić, czy uwzględnia Twój opis.</p>}
       {!historicalPhotoMask && (!feedback || job.kind !== 'recipe') && job.errorMessage && <div className="admin-notice is-error"><AlertCircle size={18} /><div><p>{studioMessage(job.errorMessage)}</p>{job.errorCode && <details><summary>Szczegóły diagnostyczne</summary><small>Kod: {job.errorCode.replace(/^AI_/, '')}</small></details>}</div></div>}

@@ -4,7 +4,7 @@ import { applyJob, cancelJob, getJobForExecution, resumeJob, failJob } from '@/s
 import { cancelText } from '@/server/ai/text-provider';
 import { cancelImage } from '@/server/ai/image-provider';
 import { recoverAcceptedPhoto } from '@/server/ai/accepted-photo-recovery';
-import { recoverRecipeResult } from '@/server/ai/recipe-recovery-dispatch';
+import { recoverRecipeResult, recheckRecipeResult } from '@/server/ai/recipe-recovery-dispatch';
 import { adminActor, adminResponse, readJson } from '@/server/http/admin';
 import { aiActionInput, aiFailure } from '@/server/http/ai';
 
@@ -17,6 +17,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const input = aiActionInput.parse(await readJson(request));
     if (input.action === 'apply') return adminResponse(await applyJob(id, input, actor));
     if (input.action === 'recover') return adminResponse({ job: await recoverRecipeResult(id, actor) }, 202);
+    if (input.action === 'recheck') return adminResponse({ job: await recheckRecipeResult(id, actor) }, 202);
     if (input.action === 'cancel') {
       const job = await cancelJob(id, actor);
       if (job.providerRequestId) {
