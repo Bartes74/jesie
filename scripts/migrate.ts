@@ -20,7 +20,7 @@ const ingredientDictionary = spawnSync(process.execPath, ['--import', 'tsx', 'sc
 if (ingredientDictionary.status !== 0) process.exit(ingredientDictionary.status || 1);
 const ingredientEvidenceRecheck = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/migrate-ingredient-evidence-recheck.ts', envFile], { stdio: 'inherit' });
 if (ingredientEvidenceRecheck.status !== 0) process.exit(ingredientEvidenceRecheck.status || 1);
-for (const script of ['scripts/migrate-collections.ts', 'scripts/migrate-collection-themes.ts']) {
+for (const script of ['scripts/migrate-collections.ts', 'scripts/migrate-collection-themes.ts', 'scripts/migrate-collection-accents.ts']) {
   const result = spawnSync(process.execPath, ['--import', 'tsx', script, envFile], { stdio: 'inherit' });
   if (result.status !== 0) process.exit(result.status || 1);
 }

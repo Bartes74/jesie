@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/server/db';
 import { getMediaBlob } from '@/server/media/storage';
 import { readBounded } from '@/server/ai/image-provider';
-import { collectionAssets } from './theme-schema';
+import { collectionAssets, type ThemeImageKind } from './theme-schema';
 import { CollectionError } from './errors';
 import type { CollectionThemeAsset } from '@/lib/collections';
 import type { Localised } from '@/lib/recipes';
@@ -15,14 +15,16 @@ export const collectionAssetPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}
 export const collectionAssetPath = (id: string) => `media/collections/${id}.webp`;
 export const inspirationMaximumBytes = 10 * 1024 * 1024;
 
-export async function normalizeCollectionImage(bytes: Buffer, inspiration = false) {
+export async function normalizeCollectionImage(bytes: Buffer, inspiration = false, trimTransparent = false) {
   const maximum = inspiration ? inspirationMaximumBytes : 32 * 1024 * 1024;
   if (!bytes.length || bytes.length > maximum) throw new CollectionError(413, 'IMAGE_TOO_LARGE', 'Grafika przekracza dopuszczalny rozmiar.');
   try {
     const image = sharp(bytes, { limitInputPixels: 24_000_000, animated: false, failOn: 'warning' });
     const metadata = await image.metadata();
     if (!['jpeg', 'png', 'webp'].includes(metadata.format ?? '') || !metadata.width || !metadata.height || (metadata.pages ?? 1) > 1) throw new CollectionError(422, 'IMAGE_FORMAT', 'Wybierz nieruchomy obraz JPEG, PNG lub WebP.');
-    const output = await image.rotate().resize({ width: inspiration ? 1600 : 1800, height: inspiration ? 1600 : 1800, fit: 'inside', withoutEnlargement: true }).webp({ quality: 88 }).toBuffer({ resolveWithObject: true });
+    // Accents are placed by their visible edges, so their transparent margins are removed.
+    const oriented = trimTransparent && metadata.hasAlpha ? image.rotate().trim({ background: '#00000000', threshold: 1 }) : image.rotate();
+    const output = await oriented.resize({ width: inspiration ? 1600 : 1800, height: inspiration ? 1600 : 1800, fit: 'inside', withoutEnlargement: true }).webp({ quality: 88 }).toBuffer({ resolveWithObject: true });
     return { bytes: output.data, width: output.info.width, height: output.info.height };
   } catch (error) {
     if (error instanceof CollectionError) throw error;
@@ -30,14 +32,14 @@ export async function normalizeCollectionImage(bytes: Buffer, inspiration = fals
   }
 }
 
-export async function saveCollectionAsset(input: { collectionId: string; kind: 'inspiration' | 'hero' | 'atmosphere'; bytes: Buffer; id?: string; generationId?: string }) {
+export async function saveCollectionAsset(input: { collectionId: string; kind: 'inspiration' | ThemeImageKind; bytes: Buffer; id?: string; generationId?: string }) {
   const id = input.id ?? randomUUID();
   const [existing] = await getDb().select().from(collectionAssets).where(eq(collectionAssets.id, id));
   if (existing) {
     if (existing.collectionId !== input.collectionId || existing.kind !== input.kind) throw new Error('COLLECTION_ASSET_IDENTITY');
     return existing;
   }
-  const image = await normalizeCollectionImage(input.bytes, input.kind === 'inspiration');
+  const image = await normalizeCollectionImage(input.bytes, input.kind === 'inspiration', !['inspiration', 'hero', 'atmosphere'].includes(input.kind));
   const pathname = collectionAssetPath(id);
   const sha256 = createHash('sha256').update(image.bytes).digest('hex');
   try { await put(pathname, image.bytes, { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType: 'image/webp' }); }
@@ -54,7 +56,7 @@ export async function saveCollectionAsset(input: { collectionId: string; kind: '
 export function themeAsset(row: typeof collectionAssets.$inferSelect, alt: Localised): CollectionThemeAsset {
   return { assetId: row.id, src: `/media/collections/${row.id}`, width: row.width, height: row.height, alt };
 }
-export async function readCollectionAsset(collectionId: string, assetId: string, kind?: 'inspiration' | 'hero' | 'atmosphere') {
+export async function readCollectionAsset(collectionId: string, assetId: string, kind?: 'inspiration' | ThemeImageKind) {
   if (!collectionAssetPattern.test(assetId)) return null;
   const [row] = await getDb().select().from(collectionAssets).where(and(eq(collectionAssets.id, assetId), eq(collectionAssets.collectionId, collectionId)));
   if (!row || kind && row.kind !== kind) return null;

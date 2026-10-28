@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ asse
   if (width && !['320', '640', '960', '1280', '1600'].includes(width)) return new Response(null, { status: 400, headers });
   try {
     const collections = await publicCollectionDefinitions();
-    const publicAsset = collections.some(collection => collection.theme?.hero.assetId === assetId || collection.theme?.atmosphere?.assetId === assetId);
+    const publicAsset = collections.some(({ theme }) => theme && [theme.hero, theme.atmosphere, ...Object.values(theme.accents ?? {})].some(asset => asset?.assetId === assetId));
     if (!publicAsset) return new Response(null, { status: 404, headers });
     const stored = await getMediaBlob(collectionAssetPath(assetId));
     if (!stored || stored.statusCode !== 200) return new Response(null, { status: 503, headers });

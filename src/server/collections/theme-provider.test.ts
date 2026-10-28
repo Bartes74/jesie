@@ -7,7 +7,7 @@ import type { ThemeProposal } from './theme-policy';
 import { ProviderError } from '@/server/ai/provider-error';
 
 const proposal: ThemeProposal = { palette: { ...defaultCollectionPalette }, decorationOpacity: .1,
-  heroPrompt: 'Independent festive artwork with an entire arrangement inside the frame.', atmospherePrompt: 'A subdued background with seasonal ornaments at its edges.',
+  accentPrompts: { corner: 'A cluster of lit candles as a standalone cut-out.', garland: 'A horizontal garland of paper lanterns across the canvas.', spot: 'A small round emblem with a single seasonal motif.' }, heroPrompt: 'Independent festive artwork with an entire arrangement inside the frame.', atmospherePrompt: 'A subdued background with seasonal ornaments at its edges.',
   heroAlt: { pl: 'Ilustracja wydarzenia', en: 'Event illustration' }, atmosphereAlt: { pl: 'Tło', en: 'Background' } };
 
 test('theme requests keep user descriptions as data and demand a strict structured response', () => {
@@ -74,4 +74,15 @@ test('queued jobs do not read results or billing and completed jobs use bounded 
   assert.equal(reads, 0);
   const complete = await pollThemeImage('model', 'receipt', { status: async () => ({ status: 'COMPLETED' }), result: async () => ({ data: { images: [{ url: 'https://v3.fal.media/collection.png' }] } }), bill: async () => ({ chargedUsd: '0.12' }), download: async url => { assert.equal(url.hostname, 'v3.fal.media'); return new Response(new Uint8Array([1, 2, 3])); }, read: async (_body, maximum) => { assert.equal(maximum, 32 * 1024 * 1024); return Buffer.from([1, 2, 3]); } });
   assert.deepEqual(complete, { done: true, bytes: Buffer.from([1, 2, 3]), chargedUsd: '0.12' });
+});
+
+test('accents are transparent cut-outs, with a wide canvas only for the garland', () => {
+  const corner = collectionImageInput('corner', proposal, ['https://v3.fal.media/hero.webp']);
+  const garland = collectionImageInput('garland', proposal, []);
+  assert.equal(corner.background, 'transparent');
+  assert.equal(garland.background, 'transparent');
+  assert.deepEqual(corner.image_size, { width: 1024, height: 1024 });
+  assert.deepEqual(garland.image_size, { width: 2240, height: 960 });
+  assert.ok(corner.prompt.startsWith(proposal.accentPrompts.corner));
+  assert.match(garland.prompt, /full width/);
 });
