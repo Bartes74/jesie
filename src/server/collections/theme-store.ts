@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getDb } from '@/server/db';
 import type { EditorialActor } from '@/lib/editorial-types';
 import { defaultCollectionPalette } from '@/lib/collections';
+import type { Localised } from '@/lib/recipes';
 import type { GenerationDto } from '@/lib/collection-theme-types';
 import { aiSettings } from '@/server/ai/config';
 import { budget, budgetLock } from '@/server/ai/store';
@@ -88,9 +89,9 @@ export async function createThemeGeneration(collectionId: string, value: unknown
 
 /** A hero uploaded from disk becomes a ready, cost-free version that goes through the same preview and approval as generated ones.
  * Hero assets must reference their version, so the version is reserved as failed first and only becomes ready with its asset. */
-export async function uploadThemeHero(collectionId: string, bytes: Buffer, actor: EditorialActor) {
+export async function uploadThemeHero(collectionId: string, bytes: Buffer, actor: EditorialActor, alt?: Localised) {
   const reserved = await reserveUploadedHero(collectionId, actor);
-  return completeUploadedHero(reserved, await saveCollectionAsset({ collectionId, kind: 'hero', bytes, generationId: reserved.id }));
+  return completeUploadedHero(reserved, await saveCollectionAsset({ collectionId, kind: 'hero', bytes, generationId: reserved.id }), alt);
 }
 export async function reserveUploadedHero(collectionId: string, actor: EditorialActor) {
   return getDb().transaction(async tx => {
@@ -104,9 +105,10 @@ export async function reserveUploadedHero(collectionId: string, actor: Editorial
     return row;
   });
 }
-export async function completeUploadedHero(reserved: Generation, asset: typeof collectionAssets.$inferSelect) {
-  const base = reserved.baseTheme;
-  const alt = base?.hero.alt ?? { pl: reserved.input.title.pl.trim() || 'Grafika kolekcji', en: reserved.input.title.en.trim() || 'Collection artwork' };
+export async function completeUploadedHero(reserved: Generation, asset: typeof collectionAssets.$inferSelect, given?: Localised) {
+  const base = reserved.baseTheme, title = reserved.input.title;
+  // The previous hero's alt text describes another image, so a missing description falls back to the collection title.
+  const alt = { pl: given?.pl.trim() || title.pl.trim() || 'Grafika kolekcji', en: given?.en.trim() || title.en.trim() || 'Collection artwork' };
   const theme = collectionThemeSchema.parse({ version: 1, palette: base?.palette ?? defaultCollectionPalette,
     decorationOpacity: base?.decorationOpacity ?? 0, hero: themeAsset(asset, alt), atmosphere: base?.atmosphere ?? null });
   const [row] = await getDb().update(generations).set({ theme, status: 'ready', error: null, updatedAt: new Date() }).where(eq(generations.id, reserved.id)).returning();
