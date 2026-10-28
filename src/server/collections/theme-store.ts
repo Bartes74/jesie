@@ -86,22 +86,31 @@ export async function createThemeGeneration(collectionId: string, value: unknown
   });
 }
 
-/** A hero uploaded from disk becomes a ready, cost-free version that goes through the same preview and approval as generated ones. */
+/** A hero uploaded from disk becomes a ready, cost-free version that goes through the same preview and approval as generated ones.
+ * Hero assets must reference their version, so the version is reserved as failed first and only becomes ready with its asset. */
 export async function uploadThemeHero(collectionId: string, bytes: Buffer, actor: EditorialActor) {
-  const asset = await saveCollectionAsset({ collectionId, kind: 'hero', bytes });
+  const reserved = await reserveUploadedHero(collectionId, actor);
+  return completeUploadedHero(reserved, await saveCollectionAsset({ collectionId, kind: 'hero', bytes, generationId: reserved.id }));
+}
+export async function reserveUploadedHero(collectionId: string, actor: EditorialActor) {
   return getDb().transaction(async tx => {
     await assertCollectionActor(tx, actor);
     const record = await getCollection(collectionId, tx);
-    const base = record.content.theme;
-    const alt = base?.hero.alt ?? { pl: record.content.title.pl.trim() || 'Grafika kolekcji', en: record.content.title.en.trim() || 'Collection artwork' };
-    const theme = collectionThemeSchema.parse({ version: 1, palette: base?.palette ?? defaultCollectionPalette,
-      decorationOpacity: base?.decorationOpacity ?? 0, hero: themeAsset(asset, alt), atmosphere: base?.atmosphere ?? null });
-    const [row] = await tx.insert(generations).values({ id: randomUUID(), collectionId, baseRevision: record.revision,
-      brief: 'Grafika główna wgrana z dysku.', part: 'hero', inspirationAssetId: null, baseTheme: base, theme, status: 'ready',
+    const id = randomUUID();
+    const [row] = await tx.insert(generations).values({ id, collectionId, baseRevision: record.revision, brief: 'Grafika główna wgrana z dysku.',
+      part: 'hero', inspirationAssetId: null, baseTheme: record.content.theme, status: 'failed', error: 'Przesyłanie grafiki nie zostało dokończone. Wgraj plik ponownie.',
       input: { title: record.content.title, description: record.content.description }, createdBy: actor.id, requestKey: randomUUID(),
-      inputHash: createHash('sha256').update(JSON.stringify([collectionId, 'upload', asset.sha256])).digest('hex') }).returning();
-    return dto(row, tx);
+      inputHash: createHash('sha256').update(JSON.stringify([collectionId, 'upload', id])).digest('hex') }).returning();
+    return row;
   });
+}
+export async function completeUploadedHero(reserved: Generation, asset: typeof collectionAssets.$inferSelect) {
+  const base = reserved.baseTheme;
+  const alt = base?.hero.alt ?? { pl: reserved.input.title.pl.trim() || 'Grafika kolekcji', en: reserved.input.title.en.trim() || 'Collection artwork' };
+  const theme = collectionThemeSchema.parse({ version: 1, palette: base?.palette ?? defaultCollectionPalette,
+    decorationOpacity: base?.decorationOpacity ?? 0, hero: themeAsset(asset, alt), atmosphere: base?.atmosphere ?? null });
+  const [row] = await getDb().update(generations).set({ theme, status: 'ready', error: null, updatedAt: new Date() }).where(eq(generations.id, reserved.id)).returning();
+  return dto(row);
 }
 
 export async function applyThemeGeneration(collectionId: string, generationId: string, expectedRevision: number, actor: EditorialActor) {
