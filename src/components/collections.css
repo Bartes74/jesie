@@ -11,6 +11,9 @@
 .collection-breadcrumb{padding-top:4px}
 .collection-breadcrumb .content-breadcrumb{margin-bottom:0}
 .collection-hero-inner{padding-block:20px 56px;display:grid;align-items:center;gap:40px}
+/* A soft wash of the page colour keeps hero copy calm on a busy occasion pattern. */
+.collection-hero-inner>div:first-child{position:relative;isolation:isolate}
+.collection-hero-inner>div:first-child::before{content:"";position:absolute;inset:-48px -64px;z-index:-1;background:radial-gradient(closest-side,var(--collection-background) 60%,transparent);opacity:.9;pointer-events:none}
 .collection-hero.has-artwork .collection-hero-inner{grid-template-columns:1.1fr .9fr}
 .collection-hero .collection-artwork{max-width:560px;isolation:isolate}
 /* Mirrors the homepage .hero-circle so the collection hero reads as part of the same site. */
@@ -128,5 +131,5 @@
 @keyframes collection-garland-sway{from{transform:rotate(-.5deg)}to{transform:rotate(.5deg)}}
 .collection-accent-spot{width:clamp(120px,15vw,190px);margin:12px auto 44px;pointer-events:none}
 @media(max-width:1100px){.collection-accent-garland{width:calc(100% - 72px)}}
-@media(max-width:700px){.collection-hero-art{max-width:440px}.collection-accent-corner{width:30%;left:-2%}.collection-accent-garland{width:calc(100% - 40px);margin-top:-16px}}
+@media(max-width:700px){.collection-hero-inner>div:first-child::before{inset:-24px -20px}.collection-hero-art{max-width:440px}.collection-accent-corner{width:30%;left:-2%}.collection-accent-garland{width:calc(100% - 40px);margin-top:-16px}}
 @media print{.collection-accent{display:none}}
