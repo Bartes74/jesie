@@ -22,7 +22,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (files.length !== 1 || !(files[0] instanceof File)) throw new CollectionError(422, 'IMAGE_REQUIRED', 'Wybierz jeden obraz JPEG, PNG lub WebP.');
     const file = Buffer.from(await files[0].arrayBuffer());
     // ponytail: a ready-made hero shares this multipart endpoint; it is saved as a reviewable version, not applied directly.
-    if (form.get('purpose') === 'hero') return adminResponse({ generation: await uploadThemeHero(id, file, session.user) }, 201);
+    const text = (name: string) => { const value = form.get(name); return typeof value === 'string' ? value.trim().slice(0, 500) : ''; };
+    if (form.get('purpose') === 'hero') return adminResponse({ generation: await uploadThemeHero(id, file, session.user, { pl: text('altPl'), en: text('altEn') }) }, 201);
     const asset = await saveCollectionAsset({ collectionId: id, kind: 'inspiration', bytes: file });
     return adminResponse({ assetId: asset.id, src: `/api/admin/collections/${id}/assets/${asset.id}` }, 201);
   } catch (error) { return collectionFailure(error); }
