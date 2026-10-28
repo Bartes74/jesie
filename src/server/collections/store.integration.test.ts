@@ -239,3 +239,17 @@ test('withdrawing the final recipe retains the published collection identity and
   const invalid = await readyCollection('Nieopublikowany członek');
   await assert.rejects(performCollectionAction(invalid.id, { expectedRevision: invalid.revision, action: 'publish' }, actor), errorCode('PUBLICATION_BLOCKED'));
 });
+
+test('a hero uploaded from disk becomes a ready version that applies to the draft without touching publication', async () => {
+  const { reserveUploadedHero, completeUploadedHero, applyThemeGeneration } = await import('./theme-store');
+  let record = await createCollection({ title: 'Wgrana grafika' }, actor);
+  const reserved = await reserveUploadedHero(record.id, actor), assetId = randomUUID();
+  assert.equal(reserved.status, 'failed');
+  const [asset] = await getDb().insert(collectionAssets).values({ id: assetId, collectionId: record.id, generationId: reserved.id, kind: 'hero', blobPathname: `media/collections/${assetId}.webp`,
+    sha256: 'd'.repeat(64), width: 1248, height: 1248, contentType: 'image/webp' }).returning();
+  const generation = await completeUploadedHero(reserved, asset);
+  assert.equal(generation.status, 'ready'); assert.equal(generation.part, 'hero');
+  assert.equal(generation.theme?.hero.assetId, assetId); assert.deepEqual(generation.theme?.palette, defaultCollectionPalette);
+  record = await applyThemeGeneration(record.id, generation.id, record.revision, actor);
+  assert.equal(record.content.themeGenerationId, generation.id); assert.equal(record.content.theme?.hero.src, `/media/collections/${assetId}`);
+});
