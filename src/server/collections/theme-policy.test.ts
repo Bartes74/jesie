@@ -6,7 +6,7 @@ import { accessibleThemeProposal, themeContrast, themeProposalSchema, type Theme
 
 const proposal = (palette: Partial<ThemeProposal['palette']> = {}): ThemeProposal => ({
   palette: { ...defaultCollectionPalette, ...palette }, decorationOpacity: .08,
-  heroPrompt: 'An original editorial illustration of a warm festive evening.',
+  accentPrompts: { corner: 'A cluster of lit candles as a standalone cut-out.', garland: 'A horizontal garland of paper lanterns across the canvas.', spot: 'A small round emblem with a single seasonal motif.' }, heroPrompt: 'An original editorial illustration of a warm festive evening.',
   atmospherePrompt: 'Quiet seasonal ornaments at the edges with a clear centre.',
   heroAlt: { pl: 'Świąteczna ilustracja', en: 'A festive illustration' },
   atmosphereAlt: { pl: 'Dekoracyjne tło', en: 'Decorative background' },

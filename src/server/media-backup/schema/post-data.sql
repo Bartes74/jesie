@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict dYln7fgTeraqMmMwsDR5IINc7GrpFoHHSdbRxQSyVeaPMoQheExnLUd9e6AoGKQ
+\restrict kVEcBzEQJAF9HheSP9wjYyvKfjwbgnrAFlfyzhRimV5rcbbJHy1zYr7xIUg3pc3
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -1658,5 +1658,5 @@ ALTER TABLE public.trend_setting_audit ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dYln7fgTeraqMmMwsDR5IINc7GrpFoHHSdbRxQSyVeaPMoQheExnLUd9e6AoGKQ
+\unrestrict kVEcBzEQJAF9HheSP9wjYyvKfjwbgnrAFlfyzhRimV5rcbbJHy1zYr7xIUg3pc3
 

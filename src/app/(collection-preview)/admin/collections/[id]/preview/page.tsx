@@ -20,7 +20,9 @@ export default async function CollectionPreviewPage({ params, searchParams }: { 
   if (query.revision && Number(query.revision) !== record.revision) return <main className="page-width hub-page"><h1>Szkic kolekcji zmienił się.</h1><p>Wróć do edytora i wczytaj bieżącą wersję przed oceną podglądu.</p></main>;
   let theme = record.content.theme;
   if (query.generation) { const generation = await getThemeGeneration(id, query.generation).catch(error => { if (error instanceof CollectionError && error.status === 404) notFound(); throw error; }); if (!generation || generation.status !== 'ready' || !generation.theme) notFound(); theme = generation.theme; }
-  const previewTheme: CollectionTheme | null = theme ? { ...theme, hero: { ...theme.hero, src: `/api/admin/collections/${encodeURIComponent(id)}/assets/${encodeURIComponent(theme.hero.assetId)}` }, atmosphere: theme.atmosphere ? { ...theme.atmosphere, src: `/api/admin/collections/${encodeURIComponent(id)}/assets/${encodeURIComponent(theme.atmosphere.assetId)}` } : null } : null;
+  const privateAsset = <Asset extends { assetId: string } | null | undefined>(asset: Asset) => asset ? { ...asset, src: `/api/admin/collections/${encodeURIComponent(id)}/assets/${encodeURIComponent(asset.assetId)}` } : asset;
+  const previewTheme: CollectionTheme | null = theme ? { ...theme, hero: privateAsset(theme.hero), atmosphere: privateAsset(theme.atmosphere),
+    ...(theme.accents ? { accents: { corner: privateAsset(theme.accents.corner), garland: privateAsset(theme.accents.garland), spot: privateAsset(theme.accents.spot) } } : {}) } : null;
   const recipes = (await getPublishedRecipes()).map(toPublicRecipe);
   const collection = resolveCollection(collectionPublicDefinition(id, { ...record.content, theme: previewTheme }, record.updatedAt), recipes, locale);
   const pl = locale === 'pl';

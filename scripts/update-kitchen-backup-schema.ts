@@ -121,7 +121,9 @@ async function main() {
     if (verifyOnly) assert.equal(hasCollections, true, 'The deployment restore bundle must include migration 0030.');
     if (verifyOnly) assert.equal(hasCollectionThemes, true, 'The deployment restore bundle must include migration 0031.');
     if (verifyOnly) assert.equal(hasCollectionThemeGuards, true, 'The deployment restore bundle must include the canonical collection security and receipt guards.');
-    const schemaChanged = !hasKitchenSchema || !hasPlanMetrics || !hasCostOnly || !hasManualReview || !hasIngredientDictionary || !hasIngredientEvidenceRecheck || !hasCollections || !hasCollectionThemes || !hasCollectionThemeGuards;
+    const hasCollectionAccents = (await source.query("SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='collection_asset_kind_check' AND pg_get_constraintdef(oid) LIKE '%garland%') AS present")).rows[0].present === true;
+    if (verifyOnly) assert.equal(hasCollectionAccents, true, 'The deployment restore bundle must include migration 0032.');
+    const schemaChanged = !hasKitchenSchema || !hasPlanMetrics || !hasCostOnly || !hasManualReview || !hasIngredientDictionary || !hasIngredientEvidenceRecheck || !hasCollections || !hasCollectionThemes || !hasCollectionThemeGuards || !hasCollectionAccents;
     phase = 'local-migration';
     if (!hasKitchenSchema) await source.query(await readFile('migrations/0024-kitchen-experience.sql', 'utf8'));
     if (!hasPlanMetrics) await source.query(await readFile('migrations/0025-plan-metrics.sql', 'utf8'));
@@ -148,6 +150,7 @@ async function main() {
       assert.ok(securityStart > 0 && securityEnd > securityStart);
       await source.query(collectionThemeSql.slice(securityStart, securityEnd));
     }
+    if (!hasCollectionAccents) await source.query(await readFile('migrations/0032-collection-accents.sql', 'utf8'));
 
     await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     phase = 'local-schema-dump';
