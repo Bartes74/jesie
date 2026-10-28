@@ -5,6 +5,7 @@ import { and, desc, eq, inArray, isNull, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/server/db';
 import type { EditorialActor } from '@/lib/editorial-types';
+import { defaultCollectionPalette } from '@/lib/collections';
 import type { GenerationDto } from '@/lib/collection-theme-types';
 import { aiSettings } from '@/server/ai/config';
 import { budget, budgetLock } from '@/server/ai/store';
@@ -81,6 +82,24 @@ export async function createThemeGeneration(collectionId: string, value: unknown
       brief: input.brief, part: input.part, inspirationAssetId: input.inspirationAssetId, baseTheme: record.content.theme,
       input: { title: record.content.title, description: record.content.description, imageModel: settings.imageModel }, createdBy: actor.id, requestKey: input.requestKey, inputHash: hash }).returning();
     await tx.insert(jobs).values({ id: randomUUID(), generationId: row.id, kind: 'spec', model: settings.recipeModel });
+    return dto(row, tx);
+  });
+}
+
+/** A hero uploaded from disk becomes a ready, cost-free version that goes through the same preview and approval as generated ones. */
+export async function uploadThemeHero(collectionId: string, bytes: Buffer, actor: EditorialActor) {
+  const asset = await saveCollectionAsset({ collectionId, kind: 'hero', bytes });
+  return getDb().transaction(async tx => {
+    await assertCollectionActor(tx, actor);
+    const record = await getCollection(collectionId, tx);
+    const base = record.content.theme;
+    const alt = base?.hero.alt ?? { pl: record.content.title.pl.trim() || 'Grafika kolekcji', en: record.content.title.en.trim() || 'Collection artwork' };
+    const theme = collectionThemeSchema.parse({ version: 1, palette: base?.palette ?? defaultCollectionPalette,
+      decorationOpacity: base?.decorationOpacity ?? 0, hero: themeAsset(asset, alt), atmosphere: base?.atmosphere ?? null });
+    const [row] = await tx.insert(generations).values({ id: randomUUID(), collectionId, baseRevision: record.revision,
+      brief: 'Grafika główna wgrana z dysku.', part: 'hero', inspirationAssetId: null, baseTheme: base, theme, status: 'ready',
+      input: { title: record.content.title, description: record.content.description }, createdBy: actor.id, requestKey: randomUUID(),
+      inputHash: createHash('sha256').update(JSON.stringify([collectionId, 'upload', asset.sha256])).digest('hex') }).returning();
     return dto(row, tx);
   });
 }
