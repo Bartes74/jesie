@@ -1,7 +1,7 @@
 {
   "format": 1,
   "serverMajor": 18,
-  "preDataSha256": "fe6e9fc936a598cc4159d0e998c3e3f386d1f7c3b7bdb3522703d3ba1c589201",
-  "postDataSha256": "cc091dd260b2ccf79f415733326e3a4772e38d82a27f98e98e62ffadc4d37e1d",
-  "schemaFingerprint": "c3b9d0a5f8a6bae882c68ee07975571bbeb6f86596e247d649ed33f4eea3909f"
+  "preDataSha256": "3f186e646997608c47ea35509a465574432b453cf5ff95eec8aafd0ec8fa5ca9",
+  "postDataSha256": "d88630a6ab5ea6b12f5eeb35901130503aba1fd7c555cb70dd3c23c4a57e31b0",
+  "schemaFingerprint": "272191d9746075fe8331b300d765654661516cad9f023ba183800b52dc47a0b2"
 }

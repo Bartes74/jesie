@@ -199,7 +199,7 @@ export function escapeXml(value: string): string {
 export type LlmsLink = { path: string; title: string; description: string };
 
 /** llms.txt (llmstxt.org): a plain index of published content only; drafts and private media never reach it. */
-export function buildLlmsText(recipes: readonly PublicRecipe[], sections: Record<Locale, { collections: LlmsLink[]; guides: LlmsLink[] }>): string {
+export function buildLlmsText(recipes: readonly PublicRecipe[], sections: Record<Locale, { collections: LlmsLink[]; guides: LlmsLink[] }>, summary: Record<Locale, string>): string {
   const line = (link: LlmsLink) => `- [${link.title.replace(/[[\]]/g, '')}](${absoluteUrl(link.path)}): ${link.description.replace(/\s+/g, ' ').trim()}`;
   const recipeLine = (recipe: PublicRecipe, locale: Locale) => {
     const category = categories.find(item => item.id === recipe.primaryCategory)?.label[locale];
@@ -217,7 +217,7 @@ export function buildLlmsText(recipes: readonly PublicRecipe[], sections: Record
   };
   return [
     `# ${SITE_NAME}`, '',
-    '> Rodzinna książka kucharska do codziennego gotowania: dostępne składniki, dopasowane porcje i instrukcje krok po kroku. / A family cookbook for everyday cooking: available ingredients, adjustable servings and step-by-step instructions.', '',
+    `> ${summary.pl.replace(/\s+/g, ' ').trim()} / ${summary.en.replace(/\s+/g, ' ').trim()}`, '',
     `Każdy przepis ma dane strukturalne schema.org/Recipe. Edycja polska: ${absoluteUrl('/pl')}; English edition: ${absoluteUrl('/en')}; RSS: ${absoluteUrl('/pl/feed.xml')}, ${absoluteUrl('/en/feed.xml')}.`, '',
     ...edition('pl'), ...edition('en'),
   ].join('\n');

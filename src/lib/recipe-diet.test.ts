@@ -20,6 +20,15 @@ test('three exclusive categories classify the base ingredients, without treating
   assert.equal(getRecipeDiet(recipe('plums', 'honey')), 'vegetarian');
 });
 
+test('crème fraîche is a recognised dairy ingredient in either spelling', () => {
+  for (const name of ['crème fraîche', 'creme fraiche', 'Crème fraîche 30%']) {
+    const inspected = inspectRecipeDiet(recipe('beetroot', name));
+    assert.equal(inspected.inferredDiet, 'vegetarian', name);
+    assert.deepEqual(inspected.uncertainIngredients, [], name);
+  }
+  assert.equal(getRecipeDiet(recipe('salmon fillet', 'crème fraîche')), 'meat');
+});
+
 test('Polish peanut names and inflections need no ingredient verification', () => {
   for (const name of ['niesolone, nieprażone orzeszki ziemne bez skórki', 'orzeszek ziemny',
     'orzeszka ziemnego', 'orzeszkowi ziemnemu', 'orzeszkiem ziemnym', 'orzeszku ziemnym',

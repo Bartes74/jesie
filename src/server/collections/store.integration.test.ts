@@ -163,7 +163,7 @@ test('generated theme receipts replay safely, apply privately, publish separatel
     record = await saveCollection(record.id, { expectedRevision: record.revision, content: { ...record.content, title: { pl: 'Pełna generacja testowa', en: 'Full generation fixture' },
       description: { pl: 'Opis', en: 'Description' }, slug: { pl: 'pelna-generacja-testowa', en: 'full-generation-fixture' }, recipeIds: ['collection-recipe-0'] } }, actor);
     const submitCounts = { spec: 0, image: 0 }, polls = new Map<string, number>(), parts = new Map<string, string>(), imageReferences: string[][] = [];
-    const proposal = { palette: { ...defaultCollectionPalette }, decorationOpacity: .12, heroPrompt: 'Create a dedicated collection illustration with clear space around its subject.', atmospherePrompt: 'Create a subtle collection background with ornamental edges and a quiet centre.', heroAlt: { pl: 'Ilustracja testowa', en: 'Fixture illustration' }, atmosphereAlt: { pl: 'Tło testowe', en: 'Fixture background' } };
+    const proposal = { palette: { ...defaultCollectionPalette }, decorationOpacity: .12, accentPrompts: { corner: 'A cluster of lit candles as a standalone cut-out.', garland: 'A horizontal garland of paper lanterns across the canvas.', spot: 'A small round emblem with a single seasonal motif.' }, heroPrompt: 'Create a dedicated collection illustration with clear space around its subject.', atmospherePrompt: 'Create a subtle collection background with ornamental edges and a quiet centre.', heroAlt: { pl: 'Ilustracja testowa', en: 'Fixture illustration' }, atmosphereAlt: { pl: 'Tło testowe', en: 'Fixture background' } };
     const execution: Partial<ThemeExecutionDependencies> = {
       ensureStorage: async () => {},
       readAsset: async (collectionId, assetId, kind) => {
@@ -238,4 +238,18 @@ test('withdrawing the final recipe retains the published collection identity and
   assert.ok(definition); assert.deepEqual(resolveCollection(definition, available, 'pl').recipes, []);
   const invalid = await readyCollection('Nieopublikowany członek');
   await assert.rejects(performCollectionAction(invalid.id, { expectedRevision: invalid.revision, action: 'publish' }, actor), errorCode('PUBLICATION_BLOCKED'));
+});
+
+test('a hero uploaded from disk becomes a ready version that applies to the draft without touching publication', async () => {
+  const { reserveUploadedHero, completeUploadedHero, applyThemeGeneration } = await import('./theme-store');
+  let record = await createCollection({ title: 'Wgrana grafika' }, actor);
+  const reserved = await reserveUploadedHero(record.id, actor), assetId = randomUUID();
+  assert.equal(reserved.status, 'failed');
+  const [asset] = await getDb().insert(collectionAssets).values({ id: assetId, collectionId: record.id, generationId: reserved.id, kind: 'hero', blobPathname: `media/collections/${assetId}.webp`,
+    sha256: 'd'.repeat(64), width: 1248, height: 1248, contentType: 'image/webp' }).returning();
+  const generation = await completeUploadedHero(reserved, asset, { pl: 'Zupa dyniowa i lampion', en: '' });
+  assert.equal(generation.status, 'ready'); assert.equal(generation.part, 'hero');
+  assert.equal(generation.theme?.hero.assetId, assetId); assert.deepEqual(generation.theme?.hero.alt, { pl: 'Zupa dyniowa i lampion', en: 'Collection artwork' }); assert.deepEqual(generation.theme?.palette, defaultCollectionPalette);
+  record = await applyThemeGeneration(record.id, generation.id, record.revision, actor);
+  assert.equal(record.content.themeGenerationId, generation.id); assert.equal(record.content.theme?.hero.src, `/media/collections/${assetId}`);
 });

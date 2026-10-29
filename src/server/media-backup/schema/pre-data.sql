@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 6TcZbKpvTEYYhl2gI2ROw2qAwublUiLaIta5W9b5Zxc5iX9V8roDCyxiQF04iw6
+\restrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -888,7 +888,7 @@ CREATE TABLE public.collection_asset (
     CONSTRAINT collection_asset_check1 CHECK ((((kind = 'inspiration'::text) AND (generation_id IS NULL)) OR ((kind <> 'inspiration'::text) AND (generation_id IS NOT NULL)))),
     CONSTRAINT collection_asset_content_type_check CHECK ((content_type = 'image/webp'::text)),
     CONSTRAINT collection_asset_height_check CHECK ((height > 0)),
-    CONSTRAINT collection_asset_kind_check CHECK ((kind = ANY (ARRAY['inspiration'::text, 'hero'::text, 'atmosphere'::text]))),
+    CONSTRAINT collection_asset_kind_check CHECK ((kind = ANY (ARRAY['inspiration'::text, 'hero'::text, 'atmosphere'::text, 'corner'::text, 'garland'::text, 'spot'::text]))),
     CONSTRAINT collection_asset_sha256_check CHECK ((sha256 ~ '^[a-f0-9]{64}$'::text)),
     CONSTRAINT collection_asset_width_check CHECK ((width > 0))
 );
@@ -951,7 +951,7 @@ CREATE TABLE public.collection_theme_generation (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT collection_theme_generation_base_revision_check CHECK ((base_revision > 0)),
-    CONSTRAINT collection_theme_generation_part_check CHECK ((part = ANY (ARRAY['all'::text, 'hero'::text, 'background'::text]))),
+    CONSTRAINT collection_theme_generation_part_check CHECK ((part = ANY (ARRAY['all'::text, 'hero'::text, 'background'::text, 'accents'::text]))),
     CONSTRAINT collection_theme_generation_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'ready'::text, 'failed'::text, 'uncertain'::text])))
 );
 
@@ -974,7 +974,7 @@ CREATE TABLE public.collection_theme_job (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT collection_theme_job_charged_usd_check CHECK ((charged_usd >= (0)::numeric)),
-    CONSTRAINT collection_theme_job_kind_check CHECK ((kind = ANY (ARRAY['spec'::text, 'hero'::text, 'atmosphere'::text]))),
+    CONSTRAINT collection_theme_job_kind_check CHECK ((kind = ANY (ARRAY['spec'::text, 'hero'::text, 'atmosphere'::text, 'corner'::text, 'garland'::text, 'spot'::text]))),
     CONSTRAINT collection_theme_job_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'submitting'::text, 'generating'::text, 'ready'::text, 'failed'::text, 'uncertain'::text])))
 );
 
@@ -1501,6 +1501,30 @@ COMMENT ON TABLE public.seo_usage_daily IS 'Europe/Warsaw calendar aggregates; n
 
 
 --
+-- Name: site_page; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.site_page (
+    id text NOT NULL,
+    revision integer DEFAULT 1 NOT NULL,
+    content jsonb NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by text NOT NULL,
+    updated_by_name text NOT NULL,
+    CONSTRAINT site_page_content_check CHECK (((jsonb_typeof(content) = 'object'::text) AND (jsonb_typeof((content -> 'pl'::text)) = 'object'::text) AND (jsonb_typeof((content -> 'en'::text)) = 'object'::text))),
+    CONSTRAINT site_page_id_check CHECK ((id = 'about'::text)),
+    CONSTRAINT site_page_revision_check CHECK ((revision > 0))
+);
+
+
+--
+-- Name: TABLE site_page; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.site_page IS 'Bilingual editable static page content; saving is live and the application keeps a built-in fallback.';
+
+
+--
 -- Name: trend_automation_takeover; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1628,5 +1652,5 @@ CREATE TABLE public.trend_setting_audit (
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 6TcZbKpvTEYYhl2gI2ROw2qAwublUiLaIta5W9b5Zxc5iX9V8roDCyxiQF04iw6
+\unrestrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
 

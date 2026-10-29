@@ -181,8 +181,8 @@ test('Recipe schema omits a time split it cannot keep consistent and mirrors vis
 test('llms.txt lists only the given published content per edition with absolute links', () => {
   const recipe = publication();
   const guide = { path: '/pl/poradniki/porcje', title: 'Porcje [poradnik]', description: 'Jak\n przeliczać.' };
-  const text = buildLlmsText([recipe], { pl: { collections: [], guides: [guide] }, en: { collections: [], guides: [] } });
-  assert(text.startsWith('# jesie.pl\n'));
+  const text = buildLlmsText([recipe], { pl: { collections: [], guides: [guide] }, en: { collections: [], guides: [] } }, { pl: 'Opis\n redakcji.', en: 'Editorial summary.' });
+  assert(text.startsWith('# jesie.pl\n\n> Opis redakcji. / Editorial summary.\n'));
   assert(text.includes(`- [${recipe.title.pl}](https://www.jesie.pl${'/pl/recipes/'}`));
   assert(text.includes(`(https://www.jesie.pl/en/recipes/`));
   assert(text.includes('- [Porcje poradnik](https://www.jesie.pl/pl/poradniki/porcje): Jak przeliczać.'));

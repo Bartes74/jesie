@@ -1,16 +1,28 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { SiteHeader, SiteFooter } from '@/components/SiteHeader';
 import { pageMetadata } from '@/lib/seo';
 import type { Locale } from '@/lib/recipes';
+import { aboutSections, defaultAboutPage } from '@/lib/about-page';
+import { getAboutPage } from '@/server/site-pages';
+export const dynamic = 'force-dynamic';
+// ponytail: any read failure (unmigrated table, outage, quota) serves the built-in text; a static page should never error.
+const aboutContent = cache(async () => {
+  try { return (await getAboutPage())?.content ?? defaultAboutPage; }
+  catch { console.error('About page content unavailable; serving built-in text.'); return defaultAboutPage; }
+});
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
-  return pageMetadata({ locale, title: locale === 'pl' ? 'O jesie.pl' : 'About jesie.pl', description: locale === 'pl' ? 'Rodzinna książka kucharska do codziennego gotowania: dostępne składniki, dopasowane porcje i instrukcje krok po kroku.' : 'A family cookbook for everyday cooking: available ingredients, adjustable servings and step-by-step instructions.', path: `/${locale}/o-serwisie`, languages: { pl: '/pl/o-serwisie', 'en-GB': '/en/o-serwisie' } });
+  if (locale !== 'pl' && locale !== 'en') notFound();
+  const { description } = (await aboutContent())[locale];
+  return pageMetadata({ locale, title: locale === 'pl' ? 'O jesie.pl' : 'About jesie.pl', description, path: `/${locale}/o-serwisie`, languages: { pl: '/pl/o-serwisie', 'en-GB': '/en/o-serwisie' } });
 }
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (locale !== 'pl' && locale !== 'en') notFound();
   const pl = locale === 'pl';
-  return <><SiteHeader locale={locale} alternateHref={`/${pl ? 'en' : 'pl'}/o-serwisie`} /><main id="main" className="hub-page page-width"><article className="guide-article"><header className="hub-heading"><p className="eyebrow">jesie.pl</p><h1>{pl ? 'Dobre jedzenie na co dzień.' : 'Good food every day.'}</h1><p>{pl ? 'Rodzinna książka kucharska, do której łatwo wrócić.' : 'A family cookbook that is easy to return to.'}</p></header><section><h2>{pl ? 'Gotowanie po swojemu' : 'Cook your way'}</h2><p>{pl ? 'jesie.pl powstało z myślą o codziennych posiłkach w domu. Zbieramy przepisy, które pomagają wybrać danie, przygotować składniki i przejść przez gotowanie bez szukania informacji w wielu miejscach.' : 'jesie.pl was created for everyday meals at home. We collect recipes that help you choose a dish, prepare ingredients and follow the method without searching for information in different places.'}</p><p>{pl ? 'Liczbę porcji dopasujesz do swojego stołu. Ilości na liście składników i w instrukcji przeliczają się razem. Możesz zapisywać ulubione dania, odhaczać kroki i wydrukować przepis z aktualnymi ilościami.' : 'Adjust servings to your table. Quantities in the ingredient list and method update together. Save favourites, tick off steps and print the recipe with the quantities you need.'}</p></section><section><h2>{pl ? 'Opracowanie przepisów' : 'Recipe editing'}</h2><p>{pl ? 'Materiały są opracowywane pod marką jesie.pl. Nowe publikacje przechodzą przegląd treści, ilości, instrukcji i ilustracji. Gdy sprawdzimy danie podczas domowego gotowania, uwagi wykorzystujemy do kolejnych poprawek.' : 'Content is edited under the jesie.pl name. New publications are reviewed for content, quantities, instructions and illustrations. When a dish is checked through home cooking, the notes inform later improvements.'}</p><p>{pl ? 'Data przy przepisie wskazuje pierwszą publikację. Datę aktualizacji zmieniamy przy poprawkach opublikowanej treści. Porady i zamienniki znajdziesz bezpośrednio przy przepisie.' : 'The date beside a recipe shows its first publication. The update date changes when published content is revised. Find tips and substitutions directly on the recipe page.'}</p></section><Link href={`/${locale}#recipes`}>{pl ? 'Przejdź do przepisów →' : 'Browse recipes →'}</Link></article></main><SiteFooter locale={locale} /></>;
+  const text = (await aboutContent())[locale];
+  return <><SiteHeader locale={locale} alternateHref={`/${pl ? 'en' : 'pl'}/o-serwisie`} /><main id="main" className="hub-page page-width"><article className="guide-article"><header className="hub-heading"><p className="eyebrow">jesie.pl</p><h1>{text.heading}</h1>{text.lead && <p>{text.lead}</p>}</header>{aboutSections(text.body).map((section, index) => <section key={index}>{section.heading && <h2>{section.heading}</h2>}{section.paragraphs.map((paragraph, item) => <p key={item}>{paragraph}</p>)}</section>)}<Link href={`/${locale}#recipes`}>{pl ? 'Przejdź do przepisów →' : 'Browse recipes →'}</Link></article></main><SiteFooter locale={locale} /></>;
 }

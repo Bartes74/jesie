@@ -8,7 +8,8 @@ const palette = Object.fromEntries(Object.keys(defaultCollectionPalette).map(key
 export const collectionThemeAssetSchema = z.object({ assetId: uuid, src: z.string().max(100), width: z.number().int().positive().max(8192), height: z.number().int().positive().max(8192), alt: localised(500) }).strict()
   .refine(asset => asset.src === `/media/collections/${asset.assetId}`, { message: 'Adres grafiki nie odpowiada jej identyfikatorowi.', path: ['src'] });
 export const collectionThemeSchema = z.object({ version: z.literal(1), palette: z.object(palette).strict(), hero: collectionThemeAssetSchema,
-  atmosphere: collectionThemeAssetSchema.nullable(), decorationOpacity: z.number().min(0).max(.18) }).strict().superRefine((theme, context) => {
+  atmosphere: collectionThemeAssetSchema.nullable(), accents: z.object({ corner: collectionThemeAssetSchema.nullable(), garland: collectionThemeAssetSchema.nullable(), spot: collectionThemeAssetSchema.nullable() }).strict().optional(),
+  decorationOpacity: z.number().min(0).max(.18) }).strict().superRefine((theme, context) => {
     for (const issue of collectionThemeIssues(theme as CollectionTheme)) context.addIssue({ code: 'custom', path: issue.field.replace(/^theme\./, '').split('.'), message: issue.message });
   });
 export const collectionPromotionSchema = z.object({ from: z.string().refine(isCollectionDate, 'Wybierz poprawną datę początku.'), to: z.string().refine(isCollectionDate, 'Wybierz poprawną datę końca.') }).strict()

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict dYln7fgTeraqMmMwsDR5IINc7GrpFoHHSdbRxQSyVeaPMoQheExnLUd9e6AoGKQ
+\restrict vRYBeW4AeLSIA6VtcqXiifaqZKJgh7gpHSotGiIcFnw1d2LxEzFUOeCjg17cxgU
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -563,6 +563,14 @@ ALTER TABLE ONLY public.reader_feedback
 
 ALTER TABLE ONLY public.seo_usage_daily
     ADD CONSTRAINT seo_usage_daily_pkey PRIMARY KEY (day, event, path, source);
+
+
+--
+-- Name: site_page site_page_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.site_page
+    ADD CONSTRAINT site_page_pkey PRIMARY KEY (id);
 
 
 --
@@ -1637,6 +1645,12 @@ ALTER TABLE public.media_delivery_variant ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.media_maintenance_run ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: site_page; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.site_page ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: trend_automation_takeover; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1658,5 +1672,5 @@ ALTER TABLE public.trend_setting_audit ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dYln7fgTeraqMmMwsDR5IINc7GrpFoHHSdbRxQSyVeaPMoQheExnLUd9e6AoGKQ
+\unrestrict vRYBeW4AeLSIA6VtcqXiifaqZKJgh7gpHSotGiIcFnw1d2LxEzFUOeCjg17cxgU
 

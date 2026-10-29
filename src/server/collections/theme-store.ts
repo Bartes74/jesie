@@ -5,20 +5,26 @@ import { and, desc, eq, inArray, isNull, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/server/db';
 import type { EditorialActor } from '@/lib/editorial-types';
+import { collectionAccentSlots, defaultCollectionPalette, type CollectionAccents } from '@/lib/collections';
+import type { Localised } from '@/lib/recipes';
 import type { GenerationDto } from '@/lib/collection-theme-types';
 import { aiSettings } from '@/server/ai/config';
 import { budget, budgetLock } from '@/server/ai/store';
 import { ProviderError } from '@/server/ai/provider-error';
 import { ensurePhotoStorageAvailable } from '@/server/media/capacity';
 import { assertCollectionActor, getCollection, lockedCollection, saveCollectionInTransaction } from './store';
-import { collectionAssets, collectionThemeCosts, collectionThemeGenerations as generations, collectionThemeJobs as jobs } from './theme-schema';
+import { collectionAssets, collectionThemeCosts, collectionThemeGenerations as generations, collectionThemeJobs as jobs, type ThemeImageKind, type ThemeJobKind } from './theme-schema';
 import { CollectionError } from './errors';
 import { collectionThemeSchema } from './validation';
 import { readCollectionAsset, saveCollectionAsset, themeAsset } from './media';
 import { pollThemeImage, pollThemeSpec, submitThemeImage, submitThemeSpec, uploadThemeReference, themeProviderCost } from './theme-provider';
 
 export const createThemeInput = z.object({ expectedRevision: z.number().int().positive(), brief: z.string().trim().min(10).max(8000),
-  part: z.enum(['all', 'hero', 'background']), inspirationAssetId: z.string().uuid().nullable(), requestKey: z.string().uuid() }).strict();
+  part: z.enum(['all', 'hero', 'background', 'accents']), inspirationAssetId: z.string().uuid().nullable(), requestKey: z.string().uuid() }).strict();
+const jobOrder: ThemeJobKind[] = ['spec', 'hero', 'atmosphere', ...collectionAccentSlots];
+const imageJobs: Record<z.infer<typeof createThemeInput>['part'], ThemeImageKind[]> = {
+  all: ['hero', 'atmosphere', ...collectionAccentSlots], hero: ['hero'], background: ['atmosphere'], accents: [...collectionAccentSlots],
+};
 type Generation = typeof generations.$inferSelect;
 type Job = typeof jobs.$inferSelect;
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>['transaction']>[0]>[0];
@@ -83,6 +89,34 @@ export async function createThemeGeneration(collectionId: string, value: unknown
     await tx.insert(jobs).values({ id: randomUUID(), generationId: row.id, kind: 'spec', model: settings.recipeModel });
     return dto(row, tx);
   });
+}
+
+/** A hero uploaded from disk becomes a ready, cost-free version that goes through the same preview and approval as generated ones.
+ * Hero assets must reference their version, so the version is reserved as failed first and only becomes ready with its asset. */
+export async function uploadThemeHero(collectionId: string, bytes: Buffer, actor: EditorialActor, alt?: Localised) {
+  const reserved = await reserveUploadedHero(collectionId, actor);
+  return completeUploadedHero(reserved, await saveCollectionAsset({ collectionId, kind: 'hero', bytes, generationId: reserved.id }), alt);
+}
+export async function reserveUploadedHero(collectionId: string, actor: EditorialActor) {
+  return getDb().transaction(async tx => {
+    await assertCollectionActor(tx, actor);
+    const record = await getCollection(collectionId, tx);
+    const id = randomUUID();
+    const [row] = await tx.insert(generations).values({ id, collectionId, baseRevision: record.revision, brief: 'Grafika główna wgrana z dysku.',
+      part: 'hero', inspirationAssetId: null, baseTheme: record.content.theme, status: 'failed', error: 'Przesyłanie grafiki nie zostało dokończone. Wgraj plik ponownie.',
+      input: { title: record.content.title, description: record.content.description }, createdBy: actor.id, requestKey: randomUUID(),
+      inputHash: createHash('sha256').update(JSON.stringify([collectionId, 'upload', id])).digest('hex') }).returning();
+    return row;
+  });
+}
+export async function completeUploadedHero(reserved: Generation, asset: typeof collectionAssets.$inferSelect, given?: Localised) {
+  const base = reserved.baseTheme, title = reserved.input.title;
+  // The previous hero's alt text describes another image, so a missing description falls back to the collection title.
+  const alt = { pl: given?.pl.trim() || title.pl.trim() || 'Grafika kolekcji', en: given?.en.trim() || title.en.trim() || 'Collection artwork' };
+  const theme = collectionThemeSchema.parse({ version: 1, palette: base?.palette ?? defaultCollectionPalette,
+    decorationOpacity: base?.decorationOpacity ?? 0, hero: themeAsset(asset, alt), atmosphere: base?.atmosphere ?? null, ...(base?.accents ? { accents: base.accents } : {}) });
+  const [row] = await getDb().update(generations).set({ theme, status: 'ready', error: null, updatedAt: new Date() }).where(eq(generations.id, reserved.id)).returning();
+  return dto(row);
 }
 
 export async function applyThemeGeneration(collectionId: string, generationId: string, expectedRevision: number, actor: EditorialActor) {
@@ -164,7 +198,7 @@ async function nextJob(id: string, token: string) {
     await budgetLock(tx);
     const [row] = await tx.select().from(generations).where(eq(generations.id, id)).for('update');
     if (!row || row.dispatchToken !== token || ['ready', 'failed', 'uncertain'].includes(row.status)) return { state: 'done' as const };
-    const children = (await tx.select().from(jobs).where(eq(jobs.generationId, id))).sort((a, b) => ['spec', 'hero', 'atmosphere'].indexOf(a.kind) - ['spec', 'hero', 'atmosphere'].indexOf(b.kind));
+    const children = (await tx.select().from(jobs).where(eq(jobs.generationId, id))).sort((a, b) => jobOrder.indexOf(a.kind) - jobOrder.indexOf(b.kind));
     const next = children.find(job => job.status !== 'ready');
     if (!next) return { state: 'assemble' as const, generation: row, children };
     if (['failed', 'uncertain'].includes(next.status)) return { state: 'done' as const };
@@ -196,17 +230,22 @@ export async function advanceThemeGeneration(id: string, token: string, override
     const { generation, children } = operation;
     const proposal = generation.proposal;
     if (!proposal) { await markFailure(id, null, 'Nie znaleziono projektu oprawy.', false, null, token); return true; }
-    const assetFor = async (kind: 'hero' | 'atmosphere') => {
+    const base = generation.baseTheme;
+    const assetFor = async (kind: ThemeImageKind) => {
       const child = children.find(job => job.kind === kind);
-      if (!child) return kind === 'hero' ? generation.baseTheme?.hero : generation.baseTheme?.atmosphere;
+      if (!child) return kind === 'hero' ? base?.hero : kind === 'atmosphere' ? base?.atmosphere : base?.accents?.[kind] ?? null;
       const result = child.result as { assetId: string } | null;
       const [asset] = result ? await getDb().select().from(collectionAssets).where(eq(collectionAssets.id, result.assetId)) : [];
-      return asset ? themeAsset(asset, kind === 'hero' ? proposal.heroAlt : proposal.atmosphereAlt) : null;
+      // Accents are decorative and rendered hidden from assistive technology.
+      return asset ? themeAsset(asset, kind === 'hero' ? proposal.heroAlt : kind === 'atmosphere' ? proposal.atmosphereAlt : { pl: '', en: '' }) : null;
     };
     const hero = await assetFor('hero'), atmosphere = await assetFor('atmosphere');
     if (!hero) { await markFailure(id, null, 'Brakuje dedykowanej grafiki kolekcji.', false, null, token); return true; }
-    const theme = collectionThemeSchema.parse({ version: 1, palette: generation.part === 'hero' ? generation.baseTheme!.palette : proposal.palette,
-      decorationOpacity: generation.part === 'hero' ? generation.baseTheme!.decorationOpacity : proposal.decorationOpacity, hero, atmosphere: atmosphere ?? null });
+    const accents = Object.fromEntries(await Promise.all(collectionAccentSlots.map(async slot => [slot, await assetFor(slot) ?? null]))) as CollectionAccents;
+    const keepsLook = generation.part === 'hero' || generation.part === 'accents';
+    const theme = collectionThemeSchema.parse({ version: 1, palette: keepsLook ? base!.palette : proposal.palette,
+      decorationOpacity: keepsLook ? base!.decorationOpacity : proposal.decorationOpacity, hero, atmosphere: atmosphere ?? null,
+      ...(Object.values(accents).some(Boolean) ? { accents } : {}) });
     await getDb().update(generations).set({ theme, status: 'ready', dispatchExpiresAt: null, error: null, updatedAt: new Date() }).where(and(eq(generations.id, id), eq(generations.dispatchToken, token)));
     return true;
   }
@@ -227,7 +266,7 @@ export async function advanceThemeGeneration(id: string, token: string, override
         if (reference) references.push(await execution.uploadReference(reference.bytes));
         const heroJob = (await getDb().select().from(jobs).where(and(eq(jobs.generationId, id), eq(jobs.kind, 'hero'))))[0];
         const heroAsset = heroJob?.result && 'assetId' in heroJob.result ? heroJob.result.assetId : generation.baseTheme?.hero.assetId;
-        if ((job.kind === 'atmosphere' || generation.part === 'hero') && heroAsset) {
+        if ((job.kind !== 'hero' || generation.part === 'hero') && heroAsset) {
           const hero = await execution.readAsset(generation.collectionId, heroAsset, 'hero');
           if (hero) references.push(await execution.uploadReference(hero.bytes));
         }
@@ -252,7 +291,7 @@ export async function advanceThemeGeneration(id: string, token: string, override
       if (!result.done) return false;
       await getDb().transaction(async tx => {
         await tx.update(generations).set({ proposal: result.proposal, updatedAt: new Date() }).where(eq(generations.id, id));
-        for (const kind of generation.part === 'hero' ? ['hero'] as const : generation.part === 'background' ? ['atmosphere'] as const : ['hero', 'atmosphere'] as const) {
+        for (const kind of imageJobs[generation.part]) {
           await tx.insert(jobs).values({ id: randomUUID(), generationId: id, kind, model: generation.input.imageModel ?? aiSettings().imageModel }).onConflictDoNothing();
         }
       });

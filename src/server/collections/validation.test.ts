@@ -46,3 +46,10 @@ test('public snapshot validation refuses private appearance inputs', () => {
   assert.equal(collectionDefinitionSchema.safeParse({ id: 'christmas', ...content }).success, true);
   assert.equal(collectionDefinitionSchema.safeParse({ id: 'christmas', ...content, appearanceBrief: 'Private' }).success, false);
 });
+
+test('themes accept optional decorative accents in known slots only', () => {
+  const accent = { ...theme.hero, alt: { pl: '', en: '' } };
+  assert.equal(collectionThemeSchema.safeParse({ ...theme, accents: { corner: accent, garland: null, spot: accent } }).success, true);
+  assert.equal(collectionThemeSchema.safeParse({ ...theme, accents: { corner: accent, garland: null } }).success, false);
+  assert.equal(collectionThemeSchema.safeParse({ ...theme, accents: { corner: null, garland: null, spot: null, banner: accent } }).success, false);
+});

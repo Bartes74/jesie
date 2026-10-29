@@ -6,6 +6,10 @@ export const legacyCollectionIds = ['quick-dinners', 'one-pot', 'pantry', 'seaso
 export type CollectionSelectionMode = 'manual' | 'quick-dinners';
 export type CollectionPromotion = { from: string; to: string };
 export type CollectionThemeAsset = { assetId: string; src: string; width: number; height: number; alt: Localised };
+/** Decorative cut-outs that carry the occasion beyond the hero: one overlaps the hero artwork, one divides hero from catalogue, one closes the page. */
+export const collectionAccentSlots = ['corner', 'garland', 'spot'] as const;
+export type CollectionAccentSlot = typeof collectionAccentSlots[number];
+export type CollectionAccents = Record<CollectionAccentSlot, CollectionThemeAsset | null>;
 export const defaultCollectionPalette = {
   background: '#faf8f2', surface: '#fdfbf7', text: '#203f32', muted: '#4f5c52', accent: '#203f32',
   accentText: '#faf8f2', border: '#dddcd1', heroBackground: '#f4dfa0', catalogBackground: '#faf8f2',
@@ -17,6 +21,8 @@ export type CollectionTheme = {
   palette: CollectionPalette;
   hero: CollectionThemeAsset;
   atmosphere: CollectionThemeAsset | null;
+  /** Absent on themes approved before accents existed. */
+  accents?: CollectionAccents;
   decorationOpacity: number;
 };
 export type CollectionContent = {

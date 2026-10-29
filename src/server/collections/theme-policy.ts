@@ -9,6 +9,7 @@ export const themePaletteSchema = z.object({
 export const themeProposalSchema = z.object({
   palette: themePaletteSchema, decorationOpacity: z.number().min(0).max(0.18),
   heroPrompt: z.string().min(20).max(6000), atmospherePrompt: z.string().min(20).max(6000),
+  accentPrompts: z.object({ corner: z.string().min(20).max(3000), garland: z.string().min(20).max(3000), spot: z.string().min(20).max(3000) }).strict(),
   heroAlt: localised, atmosphereAlt: localised,
 }).strict();
 export type ThemeProposal = z.infer<typeof themeProposalSchema>;

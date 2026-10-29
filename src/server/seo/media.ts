@@ -28,7 +28,14 @@ export function parsePublicHeroWidth(search: URLSearchParams): PublicHeroWidth |
   return Number(values[0]) as PublicHeroWidth;
 }
 
-export type StoredMedia = { stream: ReadableStream<Uint8Array>; size?: number; contentType?: string };
+// ponytail: sharing crops (social, Pinterest) are paused while hero photography is reworked;
+// they still render on first request for existing og:image links. Remove the filter to resume.
+const pausedSharingVariants = new Set(['social', 'pinterest']);
+function prewarmedVariants(recipe: RecipeImageSource) {
+  return Object.entries(getRecipeImageVariants(recipe)).filter(([name]) => !pausedSharingVariants.has(name)).map(([, variant]) => variant);
+}
+
+export type StoredMedia ={ stream: ReadableStream<Uint8Array>; size?: number; contentType?: string };
 export type RecipeMediaAsset = { id: string; recipeId: string; kind: string; blobPathname: string };
 export type RecipeMediaDependencies = {
   publishedRecipe: (id: string) => Promise<RecipeImageSource | null>;
@@ -225,7 +232,7 @@ export function createRecipeMediaService(dependencies: RecipeMediaDependencies) 
       || (dependencies.staticVariant && isStaticRecipeImage(recipe.image))) {
       // Durable preparation reuses the ordinary authorized named-image reader.
       // Each immutable target acquires its own fenced claim before rendering.
-      for (const named of Object.values(getRecipeImageVariants(recipe))) {
+      for (const named of prewarmedVariants(recipe)) {
         const parts = named.url.split('/');
         const image = await recipeImage(recipe.id, parts.at(-2)!, parts.at(-1)!);
         await image?.stream.cancel().catch(() => {});
@@ -236,7 +243,7 @@ export function createRecipeMediaService(dependencies: RecipeMediaDependencies) 
       return;
     }
     let loaded: Awaited<ReturnType<typeof source>> | undefined;
-    for (const variant of Object.values(getRecipeImageVariants(recipe))) {
+    for (const variant of prewarmedVariants(recipe)) {
       const pathname = derivativePath(variant.url);
       const ready = await stored(pathname);
       if (ready) { await ready.stream.cancel().catch(() => {}); continue; }

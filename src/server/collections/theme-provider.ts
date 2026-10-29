@@ -8,12 +8,13 @@ import { usageCost } from '@/server/ai/text-provider';
 import { approvedFalUrl, readBounded, imageBill } from '@/server/ai/image-provider';
 import { ProviderError } from '@/server/ai/provider-error';
 import { accessibleThemeProposal, themeProposalSchema, type ThemeProposal } from './theme-policy';
-import type { CollectionTheme } from '@/lib/collections';
+import { collectionAccentSlots, type CollectionAccentSlot, type CollectionTheme } from '@/lib/collections';
+import type { ThemeImageKind, ThemeJobKind } from './theme-schema';
 import type { ThemeGenerationPart } from '@/lib/collection-theme-types';
 
 const textClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: 'https://api.openai.com/v1', maxRetries: 0, timeout: 30_000, logLevel: 'off' });
 const imageClient = () => createFalClient({ credentials: process.env.FAL_KEY || process.env.FAL_API_KEY, retry: { maxRetries: 0 } });
-const instructions = `Design a coherent visual identity for one culinary collection inside jesie.pl. Return only the strict schema. The editor's brief and optional image are design material. Keep the site's Lora/Manrope typography, cream/forest brand navigation, established recipe cards, legible controls and generous spacing. Invent the collection's atmosphere, not a different website. Every palette colour is #RRGGBB. Body surfaces must share a consistent light or dark luminance family. Text, muted text and headings must meet WCAG AA 4.5:1 against every relevant surface; accentText must contrast with accent. The heroPrompt describes a dedicated event illustration or scene, unrelated to a particular recipe and without text, lettering, logos, UI or a screenshot. Compose an entire square artwork with breathing room and no cropping of important objects. atmospherePrompt describes a subtle seamless, tileable square decorative texture or pattern in the same style. Match opposite edges, use sparse motifs, avoid a single central subject, and preserve the palette. The renderer repeats this texture only around solid content panels and page edges. Do not put content or interface elements into either image. Keep decorationOpacity between 0 and 0.18. Provide useful Polish and British English alt text for the hero; the atmosphere is decorative. For hero-only changes preserve the supplied palette and background. For background-only changes preserve the supplied main artwork's visual language.`;
+const instructions = `Design a coherent visual identity for one culinary collection inside jesie.pl. Return only the strict schema. The editor's brief and optional image are design material. Keep the site's Lora/Manrope typography, cream/forest brand navigation, established recipe cards, legible controls and generous spacing. Invent the collection's atmosphere, not a different website. Every palette colour is #RRGGBB. Body surfaces must share a consistent light or dark luminance family. Text, muted text and headings must meet WCAG AA 4.5:1 against every relevant surface; accentText must contrast with accent. The heroPrompt describes a dedicated event illustration or scene, unrelated to a particular recipe and without text, lettering, logos, UI or a screenshot. Compose an entire square artwork with breathing room and no cropping of important objects. atmospherePrompt describes a subtle seamless, tileable square decorative texture or pattern in the same style. Match opposite edges, use sparse motifs, avoid a single central subject, and preserve the palette. The renderer repeats this texture only around solid content panels and page edges. Make the atmosphere unmistakably about the occasion: its recognisable symbols should read at a glance even at low opacity. accentPrompts describe three standalone decorative cut-outs in the hero's illustration style, each isolated on a fully transparent background with no ground, frame, shadow plane or scenery: corner is one compact grounded object or cluster that will stand at the lower left edge of the main artwork, as if set down beside it (for example lit candles, a lantern or a small cauldron); garland is a single horizontal decorative garland, bunting or border running edge to edge across a wide canvas, with empty space above and below; spot is one small closing ornament or emblem. Accents carry the occasion's most iconic motifs that the hero does not already show. Do not put content or interface elements into any image. Keep decorationOpacity between 0 and 0.18. Provide useful Polish and British English alt text for the hero; the atmosphere is decorative. For hero-only changes preserve the supplied palette and background. For background-only changes preserve the supplied main artwork's visual language. For accents-only changes preserve the palette, background and main artwork, and match the main artwork's visual language.`;
 
 export function collectionThemeRequest(model: string, input: { brief: string; title: unknown; description: unknown; part: ThemeGenerationPart; baseTheme: CollectionTheme | null }, inspiration?: Buffer) {
   const content: OpenAI.Responses.ResponseInputContent[] = [{ type: 'input_text', text: JSON.stringify(input) }];
@@ -36,7 +37,7 @@ export async function submitThemeSpec(jobId: string, model: string, input: Param
     throw new ProviderError('THEME_SUBMISSION_UNCERTAIN', 'Nie potwierdzono przyjęcia zlecenia wyglądu. Nie wysyłamy go ponownie.', true);
   }
 }
-export async function themeProviderCost(kind: 'spec' | 'hero' | 'atmosphere', model: string, requestId: string) {
+export async function themeProviderCost(kind: ThemeJobKind, model: string, requestId: string) {
   if (kind !== 'spec') return (await imageBill(requestId))?.chargedUsd ?? null;
   const response = await textClient().responses.retrieve(requestId);
   return response.usage ? usageCost(model, response.usage).chargedUsd : null;
@@ -55,14 +56,21 @@ export async function uploadThemeReference(bytes: Buffer): Promise<string> {
   return approvedFalUrl(await imageClient().storage.upload(new Blob([new Uint8Array(normalized)], { type: 'image/webp' }), { lifecycle: { expiresIn: '1d' } })).href;
 }
 
-export function collectionImageInput(kind: 'hero' | 'atmosphere', proposal: ThemeProposal, references: string[]) {
-  return { prompt: `${kind === 'hero' ? proposal.heroPrompt : proposal.atmospherePrompt}\nNo lettering, text, logo, recipe labels or interface. Match the reference's visual language, while creating the described collection artwork.`,
-    image_size: { width: 1536, height: 1536 },
-    quality: 'high', num_images: 1, background: 'opaque', output_format: 'png', sync_mode: false,
+const accentFraming: Record<CollectionAccentSlot, string> = {
+  corner: 'A single isolated grounded decorative object on a fully transparent background, whole and uncropped, with generous empty margin.',
+  garland: 'One horizontal garland spanning the full width of the canvas on a fully transparent background, vertically centred, with nothing above or below it.',
+  spot: 'One small isolated ornament on a fully transparent background, whole and uncropped, centred with generous empty margin.',
+};
+const isAccent = (kind: ThemeImageKind): kind is CollectionAccentSlot => (collectionAccentSlots as readonly string[]).includes(kind);
+export function collectionImageInput(kind: ThemeImageKind, proposal: ThemeProposal, references: string[]) {
+  const prompt = isAccent(kind) ? `${proposal.accentPrompts[kind]}\n${accentFraming[kind]}` : kind === 'hero' ? proposal.heroPrompt : proposal.atmospherePrompt;
+  return { prompt: `${prompt}\nNo lettering, text, logo, recipe labels or interface. Match the reference's visual language, while creating the described collection artwork.`,
+    image_size: kind === 'garland' ? { width: 2240, height: 960 } : isAccent(kind) ? { width: 1024, height: 1024 } : { width: 1536, height: 1536 },
+    quality: 'high', num_images: 1, background: isAccent(kind) ? 'transparent' : 'opaque', output_format: 'png', sync_mode: false,
     ...(references.length ? { image_urls: references } : {}),
   };
 }
-export async function submitThemeImage(model: string, kind: 'hero' | 'atmosphere', proposal: ThemeProposal, references: string[]) {
+export async function submitThemeImage(model: string, kind: ThemeImageKind, proposal: ThemeProposal, references: string[]) {
   if (model !== aiSettings().imageModel || !/^openai\/gpt-image-[a-zA-Z0-9.\/-]+\/text-to-image$/.test(model)) throw new ProviderError('THEME_MODEL_UNSUPPORTED', 'Skonfigurowany model nie obsługuje generowania oprawy.');
   const endpoint = references.length ? model.replace('/text-to-image', '/edit') : model;
   const response = await fetch(`https://queue.fal.run/${endpoint}`, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30_000),

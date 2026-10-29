@@ -74,6 +74,7 @@ test('the finished-dish shadow policy does not flatten instructional steps or re
   const input = butterInput();
   const step = imageBrief('step', input, 'serve', 'Show serving.');
   assert.doesNotMatch(step, /Finished-dish cutout format|no external cast shadow/);
+  assert.match(step, /Metal rings, moulds, pans and other opaque tools stay solid around their full height/);
   input.aiPhotography = { ingredientStyleProfile: paperIngredientStyleProfile };
   const ingredient = imageBrief('ingredient', input, input.recipe.ingredients[0].id, 'Show the ingredient.');
   assert.match(ingredient, /natural soft contact shadow/);

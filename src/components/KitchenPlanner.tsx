@@ -15,7 +15,7 @@ import { SectionLink } from './SectionLink';
 import { RecipeDietBadge } from './RecipeDietBadge';
 import { recommendPlanRecipes } from '@/lib/meal-plan-recommendations';
 
-type PlanAddProps = { recipe: PublicRecipe; locale: Locale } & (
+type PlanAddProps = { recipe: PublicRecipe; locale: Locale; showPlanLink?: boolean } & (
   { mode?: 'add-only'; servings?: never; selection?: never }
   | { mode: 'snapshot'; servings: number; selection: ShoppingSelection }
 );
@@ -33,7 +33,7 @@ export function PlanAddButton(props: PlanAddProps) {
     if (!existing) recordUsage('plan_add', getRecipeHref(recipe, locale));
     setNotice(pl ? existing ? 'Zapisano wybrane porcje i zamienniki w planie.' : 'Dodano danie. Otwórz plan, aby wybrać kolejny posiłek lub zobaczyć wspólne zakupy.' : existing ? 'Selected servings and substitutions saved in your plan.' : 'Meal added. Open your plan to choose another meal or see your combined shopping list.');
   }
-  return <div className="plan-add">{existing && props.mode !== 'snapshot' ? <span className="planning-in-plan"><Check size={16} aria-hidden="true" />{pl ? 'W planie' : 'In your plan'}</span> : <button type="button" className="planning-button" disabled={full} onClick={add}>{existing ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}{pl ? existing ? 'Zaktualizuj w planie' : full ? 'Plan pełny · 3/3' : 'Dodaj do planu' : existing ? 'Update in plan' : full ? 'Plan full · 3/3' : 'Add to plan'}</button>}<Link href={`/${locale}/plan`} className="planning-text-button">{pl ? 'Otwórz mój plan' : 'Open my plan'} ({plan.meals.length}/3) →</Link>{notice && existing && <p role="status" className="planning-note">{notice}</p>}</div>;
+  return <div className="plan-add">{existing && props.mode !== 'snapshot' ? <span className="planning-in-plan"><Check size={16} aria-hidden="true" />{pl ? 'W planie' : 'In your plan'}</span> : <button type="button" className="planning-button" disabled={full} onClick={add}>{existing ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}{pl ? existing ? 'Zaktualizuj w planie' : full ? 'Plan pełny · 3/3' : 'Dodaj do planu' : existing ? 'Update in plan' : full ? 'Plan full · 3/3' : 'Add to plan'}</button>}{props.showPlanLink !== false && <Link href={`/${locale}/plan`} className="planning-text-button">{pl ? 'Otwórz mój plan' : 'Open my plan'} ({plan.meals.length}/3) →</Link>}{notice && existing && <p role="status" className="planning-note">{notice}</p>}</div>;
 }
 
 export function KitchenPlanner({ recipes, locale }: { recipes: PublicRecipe[]; locale: Locale }) {

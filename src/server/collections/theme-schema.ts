@@ -1,9 +1,12 @@
 import { integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { collections } from './schema';
-import type { CollectionTheme } from '@/lib/collections';
+import type { CollectionAccentSlot, CollectionTheme } from '@/lib/collections';
 import type { ThemeGenerationPart, ThemeGenerationStatus } from '@/lib/collection-theme-types';
 import type { ThemeProposal } from './theme-policy';
 import type { Localised } from '@/lib/recipes';
+
+export type ThemeImageKind = 'hero' | 'atmosphere' | CollectionAccentSlot;
+export type ThemeJobKind = 'spec' | ThemeImageKind;
 
 export const collectionThemeGenerations = pgTable('collection_theme_generation', {
   id: text('id').primaryKey(), collectionId: text('collection_id').notNull().references(() => collections.id),
@@ -21,7 +24,7 @@ export const collectionThemeGenerations = pgTable('collection_theme_generation',
 
 export const collectionThemeJobs = pgTable('collection_theme_job', {
   id: text('id').primaryKey(), generationId: text('generation_id').notNull().references(() => collectionThemeGenerations.id),
-  kind: text('kind').$type<'spec' | 'hero' | 'atmosphere'>().notNull(), model: text('model').notNull(),
+  kind: text('kind').$type<ThemeJobKind>().notNull(), model: text('model').notNull(),
   status: text('status').$type<'queued' | 'submitting' | 'generating' | 'ready' | 'failed' | 'uncertain'>().notNull().default('queued'),
   providerRequestId: text('provider_request_id'), providerFinishedAt: timestamp('provider_finished_at', { withTimezone: true }),
   chargedUsd: numeric('charged_usd', { precision: 16, scale: 8 }),
@@ -33,7 +36,7 @@ export const collectionThemeJobs = pgTable('collection_theme_job', {
 export const collectionAssets = pgTable('collection_asset', {
   id: text('id').primaryKey(), collectionId: text('collection_id').notNull().references(() => collections.id),
   generationId: text('generation_id').references(() => collectionThemeGenerations.id),
-  kind: text('kind').$type<'inspiration' | 'hero' | 'atmosphere'>().notNull(),
+  kind: text('kind').$type<'inspiration' | ThemeImageKind>().notNull(),
   blobPathname: text('blob_pathname').notNull(), sha256: text('sha256').notNull(),
   width: integer('width').notNull(), height: integer('height').notNull(), contentType: text('content_type').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
