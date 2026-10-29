@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
+import { legacyRedirects } from "./src/lib/legacy-redirects";
 
 const config: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
@@ -20,6 +21,9 @@ const config: NextConfig = {
     '/api/cron/trends/publish': ['./public/images/**', './private-media/published-recovery/**'],
     '/api/admin/seo': ['./public/images/**', './private-media/published-recovery/**'],
     '/api/admin/recipes/\\[id\\]/actions': ['./public/images/**'],
+  },
+  redirects() {
+    return legacyRedirects;
   },
   headers() {
     const indexable = process.env.VERCEL_ENV ? process.env.VERCEL_ENV === 'production' : process.env.NODE_ENV === 'production' && process.env.SEO_INDEXING_ENABLED === 'true';
