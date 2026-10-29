@@ -29,6 +29,23 @@ test('crème fraîche is a recognised dairy ingredient in either spelling', () =
   assert.equal(getRecipeDiet(recipe('salmon fillet', 'crème fraîche')), 'meat');
 });
 
+test('ready-made doughs and butter biscuits are vegetarian without ingredient verification', () => {
+  for (const name of ['ciasto filo, gotowe do rozłożenia', 'phyllo pastry', 'drobne, twarde słone precelki', 'salted pretzels', 'krakersy papdi', 'sev', 'maślane kruche ciastko', 'shortbread biscuit']) {
+    const inspected = inspectRecipeDiet(recipe('pistachios', name));
+    assert.equal(inspected.inferredDiet, 'vegetarian', name);
+    assert.deepEqual(unrecognisedRecipeIngredientNames(recipe(name).ingredients), [], name);
+  }
+  assert.equal(getRecipeDiet(recipe('duck leg', 'filo pastry')), 'meat');
+  assert.equal(getRecipeDiet(recipe('vegan filo pastry', 'olive oil')), 'vegan');
+});
+
+test('dry spice blends are recognised plant ingredients', () => {
+  for (const name of ['za’atar', "za'atar", 'zaatar', 'chaat masala', 'garam masala', 'ras el hanout']) {
+    assert.equal(getRecipeDiet(recipe('carrots', name)), 'vegan', name);
+    assert.deepEqual(unrecognisedRecipeIngredientNames(recipe(name).ingredients), [], name);
+  }
+});
+
 test('Polish peanut names and inflections need no ingredient verification', () => {
   for (const name of ['niesolone, nieprażone orzeszki ziemne bez skórki', 'orzeszek ziemny',
     'orzeszka ziemnego', 'orzeszkowi ziemnemu', 'orzeszkiem ziemnym', 'orzeszku ziemnym',
