@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { CookingPot, LayoutDashboard, BookOpen, Images, Settings2, LogOut, Menu, X, ArrowUpRight, Sparkles, Radar, Search, CalendarClock, LibraryBig } from 'lucide-react';
+import { CookingPot, LayoutDashboard, BookOpen, Images, Settings2, LogOut, Menu, X, ArrowUpRight, Sparkles, Radar, Search, CalendarClock, LibraryBig, Info } from 'lucide-react';
 import { createAuthClient } from 'better-auth/react';
 
 const authClient = createAuthClient();
 const links = [{ href: '/admin', label: 'Przegląd', icon: LayoutDashboard }, { href: '/admin/recipes', label: 'Przepisy', icon: BookOpen }, { href: '/admin/collections', label: 'Kolekcje', icon: LibraryBig }, { href: '/admin/automation', label: 'Codzienne inspiracje', icon: CalendarClock }, { href: '/admin/settings', label: 'Ustawienia', icon: Settings2 }];
-const extraLinks = [{ href: '/admin/seo', label: 'SEO i odkrywanie', icon: Search }, { href: '/admin/trends', label: 'Szczegóły trendów', icon: Radar }, { href: '/admin/ai', label: 'Studio zaawansowane', icon: Sparkles }, { href: '/admin/library', label: 'Biblioteka zdjęć', icon: Images }];
+const extraLinks = [{ href: '/admin/seo', label: 'SEO i odkrywanie', icon: Search }, { href: '/admin/trends', label: 'Szczegóły trendów', icon: Radar }, { href: '/admin/ai', label: 'Studio zaawansowane', icon: Sparkles }, { href: '/admin/library', label: 'Biblioteka zdjęć', icon: Images }, { href: '/admin/about', label: 'Strona O serwisie', icon: Info }];
 
 export function AdminShell({ children, user }: { children: React.ReactNode; user: { name: string; email: string; role: string } }) {
   const pathname = usePathname();

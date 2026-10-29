@@ -112,14 +112,15 @@ test('all five legacy SEO targets persist once across fresh services and publica
   assert.equal(renders, 5, 'Withdrawal on a durable read never triggers another rendering');
 });
 
-test('publish preparation is resumable and prepares five WebP derivatives once', async () => {
+test('publish preparation is resumable and prepares the three search derivatives once while sharing crops are paused', async () => {
   const mock = fixture(await source());
   const service = createRecipeMediaService(mock.dependencies);
   await service.prepareRecipeMedia(baseRecipe);
   assert.equal(mock.reads(), 1);
-  assert.equal(mock.saved.size, 5);
-  for (const variant of Object.values(getRecipeImageVariants(baseRecipe))) {
+  assert.equal(mock.saved.size, 3);
+  for (const [name, variant] of Object.entries(getRecipeImageVariants(baseRecipe))) {
     const image = mock.saved.get('seo/' + variant.url.replace(/^\/media\//, ''))!;
+    if (name === 'social' || name === 'pinterest') { assert.equal(image, undefined); continue; }
     const metadata = await sharp(image).metadata();
     assert.equal(metadata.format, 'webp');
     assert.equal(metadata.width, variant.width);
@@ -129,7 +130,7 @@ test('publish preparation is resumable and prepares five WebP derivatives once',
   }
   await service.prepareRecipeMedia(baseRecipe);
   assert.equal(mock.reads(), 1);
-  assert.equal(mock.saved.size, 5);
+  assert.equal(mock.saved.size, 3);
 });
 
 test('concurrent publication events reuse a winning immutable upload after generic Blob duplicate errors', async () => {
@@ -155,7 +156,7 @@ test('concurrent publication events reuse a winning immutable upload after gener
   const service = createRecipeMediaService(mock.dependencies);
   await Promise.all([service.prepareRecipeMedia(baseRecipe), service.prepareRecipeMedia(baseRecipe)]);
   assert.ok(collisions >= 1);
-  assert.equal(mock.saved.size, 5);
+  assert.equal(mock.saved.size, 3);
 });
 
 test('immutable upload recovery preserves the original error unless a bounded WebP exists at the exact path', async () => {
@@ -233,7 +234,7 @@ test('a published duplicate can reuse its source recipe hero while unrelated pri
   mock.saved.set('source.webp', bytes);
   const service = createRecipeMediaService(mock.dependencies);
   await service.prepareRecipeMedia(duplicate);
-  assert.equal(mock.saved.size, 7, 'The duplicate prepares five recipe derivatives and the shared UI hero.');
+  assert.equal(mock.saved.size, 5, 'The duplicate prepares three recipe derivatives and the shared UI hero.');
   const [, , , id, version, filename] = getRecipeImageVariants(duplicate).classic.url.split('/');
   const image = await service.recipeImage(id, version, filename);
   assert.ok(image);
@@ -269,14 +270,14 @@ test('private hero prewarming preserves presentation and reuses the stored deliv
   mock.saved.set('source.webp', bytes);
   const service = createRecipeMediaService(mock.dependencies);
   await service.prepareRecipeMedia(recipe);
-  assert.equal(mock.saved.size, 7, 'Five variants, one original and one UI delivery.');
+  assert.equal(mock.saved.size, 5, 'Three variants, one original and one UI delivery.');
   const display = await service.heroDelivery((await mock.dependencies.asset(assetId))!);
   const metadata = await sharp(await readBoundedMedia(display)).metadata();
   assert.equal(metadata.format, 'webp');
   assert.equal(metadata.width, 1800);
   assert.equal(metadata.height, 1200);
   await service.prepareRecipeMedia(recipe);
-  assert.equal(mock.saved.size, 7);
+  assert.equal(mock.saved.size, 5);
 });
 
 test('published hero delivery retains the normalized cutout silhouette and visible RGBA pixels', async () => {

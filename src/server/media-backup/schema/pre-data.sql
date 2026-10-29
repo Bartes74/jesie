@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 0wazyogWEF1axT7gmwkar4Tpf9aDpiZrAjGgSBQ3M2jXzx1tzzo15K5KBguftvF
+\restrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -1501,6 +1501,30 @@ COMMENT ON TABLE public.seo_usage_daily IS 'Europe/Warsaw calendar aggregates; n
 
 
 --
+-- Name: site_page; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.site_page (
+    id text NOT NULL,
+    revision integer DEFAULT 1 NOT NULL,
+    content jsonb NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by text NOT NULL,
+    updated_by_name text NOT NULL,
+    CONSTRAINT site_page_content_check CHECK (((jsonb_typeof(content) = 'object'::text) AND (jsonb_typeof((content -> 'pl'::text)) = 'object'::text) AND (jsonb_typeof((content -> 'en'::text)) = 'object'::text))),
+    CONSTRAINT site_page_id_check CHECK ((id = 'about'::text)),
+    CONSTRAINT site_page_revision_check CHECK ((revision > 0))
+);
+
+
+--
+-- Name: TABLE site_page; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.site_page IS 'Bilingual editable static page content; saving is live and the application keeps a built-in fallback.';
+
+
+--
 -- Name: trend_automation_takeover; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1628,5 +1652,5 @@ CREATE TABLE public.trend_setting_audit (
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 0wazyogWEF1axT7gmwkar4Tpf9aDpiZrAjGgSBQ3M2jXzx1tzzo15K5KBguftvF
+\unrestrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
 
