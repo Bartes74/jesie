@@ -22,7 +22,7 @@
 .collection-description{font-size:17px;line-height:1.9;max-width:650px;color:var(--collection-muted)}
 .collection-count{font-size:12px;margin-block:20px 24px;color:var(--collection-muted)}
 .collection-artwork{position:relative;aspect-ratio:1;min-width:0;width:100%;max-width:680px;justify-self:center}
-.collection-artwork img{display:block;width:100%;height:100%;object-fit:contain}.collection-hero-art .collection-artwork,.collection-hero-promotion .collection-artwork{container-type:inline-size}.collection-hero-art .collection-artwork img,.collection-hero-promotion .collection-artwork img{filter:drop-shadow(0 .5cqi .6cqi rgb(43 47 28 / .16)) drop-shadow(0 2.6cqi 3.6cqi rgb(43 47 28 / .14))}
+.collection-artwork img{display:block;width:100%;height:100%;object-fit:contain}.collection-hero-art .collection-artwork,.collection-hero-promotion .collection-artwork{container-type:inline-size}.collection-hero-art .collection-artwork img,.collection-hero-promotion .collection-artwork img{filter:drop-shadow(.4cqi .5cqi .6cqi rgb(43 47 28 / .16)) drop-shadow(2.2cqi 2.6cqi 3.6cqi rgb(43 47 28 / .14))}
 .collection-hero-promotion{display:block;position:relative;width:100%;height:100%;color:var(--forest)}
 .collection-hero-promotion .hero-circle{background:var(--collection-hero-background)}
 .collection-hero-promotion .collection-artwork{position:absolute;inset:0;max-width:none}

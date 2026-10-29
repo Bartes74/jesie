@@ -26,7 +26,7 @@
 @media print{.popular-now{font-size:7pt;background:none;color:#222;padding:0;margin-bottom:6px}.ingredient-substitutions{margin-top:15px;padding-top:12px;border-color:#bbb}.ingredient-substitutions h3{font-size:12pt;margin-bottom:6px}.ingredient-substitutions>p,.ingredient-substitutions li p{font-size:7pt;line-height:1.6;color:#444}.ingredient-substitutions ul{margin-top:9px}.ingredient-substitutions li{padding:0;background:none;border-radius:0;margin-bottom:9px}.ingredient-substitutions li>span{font-size:7pt;color:#444}.ingredient-substitutions li>strong{font-size:8pt;margin-top:2px}.ingredient-substitutions li p{margin-top:3px}}
 
 @keyframes recipe-dish-fade{from{opacity:0}to{opacity:1}}
-.recipe-dish-frame{isolation:isolate;container-type:size;clip-path:inset(0 0 -10% 0);pointer-events:none}.recipe-dish-frame[data-cutout]>img{filter:drop-shadow(0 .5cqh .6cqh rgb(43 47 28 / .16)) drop-shadow(0 2.6cqh 3.6cqh rgb(43 47 28 / .14))}.recipe-dish-frame>img{z-index:1}
+.recipe-dish-frame{isolation:isolate;container-type:size;clip-path:inset(0 0 -10% 0);pointer-events:none}.recipe-dish-frame[data-cutout]>img{filter:drop-shadow(.4cqh .5cqh .6cqh rgb(43 47 28 / .16)) drop-shadow(2.2cqh 2.6cqh 3.6cqh rgb(43 47 28 / .14))}.recipe-dish-frame>img{z-index:1}
 .recipe-dish-frame .hero-food,.recipe-dish-frame .detail-dish{animation-name:recipe-dish-fade}
 @media print{.recipe-dish-frame img{filter:none}.recipe-dish-frame img{scale:1!important;translate:none!important;transform-origin:50% 50%!important}}
 .filters-toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px 0 0;background:none;font:inherit;font-weight:600;color:var(--forest);cursor:pointer}
