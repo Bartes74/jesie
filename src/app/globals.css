@@ -26,9 +26,9 @@
 @media print{.popular-now{font-size:7pt;background:none;color:#222;padding:0;margin-bottom:6px}.ingredient-substitutions{margin-top:15px;padding-top:12px;border-color:#bbb}.ingredient-substitutions h3{font-size:12pt;margin-bottom:6px}.ingredient-substitutions>p,.ingredient-substitutions li p{font-size:7pt;line-height:1.6;color:#444}.ingredient-substitutions ul{margin-top:9px}.ingredient-substitutions li{padding:0;background:none;border-radius:0;margin-bottom:9px}.ingredient-substitutions li>span{font-size:7pt;color:#444}.ingredient-substitutions li>strong{font-size:8pt;margin-top:2px}.ingredient-substitutions li p{margin-top:3px}}
 
 @keyframes recipe-dish-fade{from{opacity:0}to{opacity:1}}
-.recipe-dish-frame{isolation:isolate}.recipe-dish-frame::before{content:"";position:absolute;pointer-events:none;z-index:0;left:var(--dish-shadow-x,50%);top:var(--dish-shadow-y,90%);width:var(--dish-shadow-width,0px);height:var(--dish-shadow-height,0px);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse closest-side,rgb(43 47 28 / .14),rgb(43 47 28 / .06) 45%,transparent 100%);opacity:var(--dish-shadow-visible,0)}.recipe-dish-frame>img{z-index:1}
+.recipe-dish-frame{isolation:isolate;container-type:size;clip-path:inset(0 0 -10% 0);pointer-events:none}.recipe-dish-frame[data-cutout]>img{filter:drop-shadow(0 .5cqh .6cqh rgb(43 47 28 / .16)) drop-shadow(0 2.6cqh 3.6cqh rgb(43 47 28 / .14))}.recipe-dish-frame>img{z-index:1}
 .recipe-dish-frame .hero-food,.recipe-dish-frame .detail-dish{animation-name:recipe-dish-fade}
-@media print{.recipe-dish-frame::before{display:none}.recipe-dish-frame img{scale:1!important;translate:none!important;transform-origin:50% 50%!important}}
+@media print{.recipe-dish-frame img{filter:none}.recipe-dish-frame img{scale:1!important;translate:none!important;transform-origin:50% 50%!important}}
 .filters-toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px 0 0;background:none;font:inherit;font-weight:600;color:var(--forest);cursor:pointer}
 .filters-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--forest);color:var(--paper);font-size:12px}
 .catalog-filter-panel{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;padding:16px 0;border-bottom:1px solid var(--line)}
