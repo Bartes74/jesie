@@ -63,12 +63,20 @@ export async function cropStepPhoto(sourceBytes: Buffer, tile?: Pick<MediaTile, 
   const height = units * 3;
   const left = region.left + Math.floor((region.width - width) / 2);
   const top = region.top + Math.floor((region.height - height) / 2);
+  let bytes: Buffer;
+  let alphaMinimum: number | undefined;
   try {
-    const bytes = await sharp(sourceBytes, { limitInputPixels: maximumPixels, failOn: 'error' }).extract({ left, top, width, height }).png().toBuffer();
-    return { bytes, width, height };
+    bytes = await sharp(sourceBytes, { limitInputPixels: maximumPixels, failOn: 'error' }).extract({ left, top, width, height }).png().toBuffer();
+    if (source.hasAlpha) alphaMinimum = (await sharp(bytes).stats()).channels[3]?.min;
   } catch {
     throw new PhotoFormatError('PHOTO_SOURCE_INVALID', 'Nie udało się odczytać pikseli fotografii.');
   }
+  // A step photograph is a full frame. Any alpha hole (e.g. a ghosted metal
+  // ring or tray) would show the page background through the cookware.
+  if (alphaMinimum !== undefined && alphaMinimum < 255) {
+    throw new PhotoFormatError('PHOTO_SOURCE_INVALID', 'Zdjęcie etapu ma przezroczyste piksele: tło prześwitywałoby przez naczynie. Wygeneruj kadr z pełnym, nieprzezroczystym tłem.');
+  }
+  return { bytes, width, height };
 }
 
 async function rgba(bytes: Buffer, mask = false) {

@@ -68,10 +68,19 @@ test('1536 × 1024 becomes 1533 × 657, with every retained RGB pixel unchanged'
 });
 
 test('an already exact 21:9 photograph retains its size and RGBA pixels', async () => {
-  const source = await image(224, 96, (x, y) => [x, y, 241, x % 5 === 0 ? 127 : 255], 4);
+  const source = await image(224, 96, (x, y) => [x, y, 241, 255], 4);
   const result = await cropStepPhoto(source.bytes);
   assert.deepEqual({ width: result.width, height: result.height }, { width: 224, height: 96 });
   assert.deepEqual((await decoded(result.bytes, true)).data, source.data);
+});
+
+test('a step photograph with see-through pixels inside the crop is rejected; transparency cropped away is not', async () => {
+  const holed = await image(224, 96, (x, y) => [180, 180, 185, x >= 100 && x < 120 && y >= 40 && y < 60 ? 0 : 255], 4);
+  await assert.rejects(cropStepPhoto(holed.bytes), failure('PHOTO_SOURCE_INVALID'));
+  const faint = await image(224, 96, () => [180, 180, 185, 254], 4);
+  await assert.rejects(cropStepPhoto(faint.bytes), failure('PHOTO_SOURCE_INVALID'));
+  const margin = await image(224, 120, (x, y) => [180, 180, 185, y < 12 || y >= 108 ? 0 : 255], 4);
+  assert.deepEqual(await cropStepPhoto(margin.bytes).then(result => [result.width, result.height]), [224, 96]);
 });
 
 test('generic dimensions use the largest integer 7:3 crop without adding pixels', async () => {
