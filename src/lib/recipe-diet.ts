@@ -40,7 +40,10 @@ function normalise(value: string): string {
 const animalFlesh = /\b(?:meat|meatballs?|beef|pork|veal|lamb|mutton|venison|rabbit|chicken|turkey|duck|goose|geese|poultry|bacon|ham|prosciutto|pancetta|salami|chorizo|salsiccia|sausage|lard|tallow|suet|dripping|gelatine?|collagen|isinglass|carmine|cochineal|shellac|fish|salmon|tuna|cod|haddock|herring|sardines?|anchov(?:y|ies)|trout|mackerel|sea bass|seabass|seabream|sea bream|shrimp|prawns?|crab|lobster|crayfish|mussels?|clams?|oysters?|scallops?|squid|octopus|cuttlefish|caviar|bonito|katsuobushi|surimi|mieso|miesa|miesem|miesie|wolow\w*|wieprzow\w*|cielec\w*|jagniec\w*|baranin\w*|dziczyzn\w*|krolik\w*|kurczak\w*|indy[ck]\w*|kaczk\w*|gesina|drobi\w*|boczek|boczk\w*|szynk\w*|kielbas\w*|smalec|smalcu|smalcem|loj|zelatyn\w*|kolagen\w*|ryb\w*|losos\w*|tunczyk\w*|dorsz\w*|sledz\w*|sardyn\w*|anchois|pstrag\w*|makrel\w*|labraks\w*|dorad\w*|krewet\w*|krab\w*|homar\w*|malz\w*|ostryg\w*|przegrzeb\w*|kalmar\w*|osmiornic\w*|kawior\w*|karmin\w*|koszenil\w*)\b/;
 const animalRennet = /\b(?:animal|calf|traditional)\s+(?:rennet|enzymes?)\b|\b(?:podpuszcz\w*\s+(?:zwierzec\w*|cielec\w*)|pepsin\w*|pepsyn\w*)\b/;
 const traditionalHardCheese = /\b(?:parmesan|parmezan\w*|parmigiano(?: reggiano)?|grana padano|pecorino(?: romano)?|roquefort)\b/;
-const dairyAndEggs = /\b(?:milk|butter|ghee|cream|creme fraiche|yoghurt|yogurt|kefir|buttermilk|whey|casein|lactose|eggs?|yolks?|egg whites?|honey|royal jelly|beeswax|mayonnaise|mayo|mleko|mleka|mleku|mlekiem|mleczk\w*|maslo|masla|maslem|masle|smietan\w*|jogurt\w*|kefir\w*|maslank\w*|serwatk\w*|kazein\w*|laktoz\w*|jaj\w*|zolt\w*|bialk\w*|miod\w*|majonez\w*|wosk pszczeli)\b/;
+const dairyAndEggs = /\b(?:milk|butter|ghee|cream|creme fraiche|shortbread|yoghurt|yogurt|kefir|buttermilk|whey|casein|lactose|eggs?|yolks?|egg whites?|honey|royal jelly|beeswax|mayonnaise|mayo|mleko|mleka|mleku|mlekiem|mleczk\w*|maslo|masla|maslem|masle|maslan\w*|smietan\w*|jogurt\w*|kefir\w*|maslank\w*|serwatk\w*|kazein\w*|laktoz\w*|jaj\w*|zolt\w*|bialk\w*|miod\w*|majonez\w*|wosk pszczeli)\b/;
+// Ready-made doughs and crackers usually are plant-based, but some brands add butter, milk or eggs.
+// Without a label they count as vegetarian: never meat, never certified vegan.
+const bakedDough = /\b(?:filo|phyllo|fillo|yufka|kataifi|pretzels?|precel\w*|papdi|papri|sev)\b/;
 const cheese = /\b(?:cheese|cheddar|burrata|feta|mozzarella|halloumi|gouda|edam|camembert|brie|gorgonzola|gruyere|emmental|manchego|raclette|ser|sera|serem|sery|serow\w*|koz(?:i|iego|im))\b/;
 const acidCheese = /\b(?:ricotta|paneer|cottage cheese|cream cheese|mascarpone|twarog\w*|serek smietankowy)\b/;
 const vegetarianRennet = /\b(?:microbial|vegetarian|vegetable|plant|thistle)\s+rennet\b|\b(?:podpuszcz\w*\s+(?:mikrobiologiczn\w*|roslinn\w*|wegetarians\w*))\b|\b(?:vegetarian cheese|ser\w* wegetarians\w*)\b/;
@@ -77,6 +80,7 @@ const plantVocabulary = {
   vegetables: /\b(?:aubergines?|eggplants?|leeks?|fennel|kohlrabi|artichokes?|asparagus|radish(?:es)?|turnips?|swedes?|rutabagas?|okra|pak[- ]?choi|bok[- ]?choy|chard|sorrel|rhubarb|watercress|cress|horseradish|avocados?|olives?|capers?|brussels sprouts|courgettes?|zucchinis?|chicory|endives?|witloof|baklazan\w*|por(?:a|y|ow|em|ze)?|fenkul\w*|kalarep\w*|karczoch\w*|szparag\w*|rzodkiew\w*|rzep(?:a|y|ie|e)?|brukiew|brukwi\w*|botwin\w*|bocwin\w*|szczaw\w*|rabarbar\w*|rukiew|rukwi\w*|rzezuch\w*|chrzan\w*|awokado|kapar\w*|bruksel\w*|cukini\w*|cykori\w*|endywi\w*)\b/,
   fruit: /\b(?:bananas?|grapes?|melons?|watermelons?|kiwifruit|kiwis?|mango(?:es|s)?|pineapples?|nectarines?|gooseberries|blackberries|tangerines?|mandarins?|grapefruits?|banan\w*|winogron\w*|melon\w*|arbuz\w*|kiwi|mango|ananas\w*|nektaryn\w*|agrest\w*|jezyn\w*|truskawk\w*|malin\w*|jagod\w*|czeresni\w*|morel\w*|daktyl\w*|fig\w*|mandaryn\w*|grejpfrut\w*)\b/,
   herbsAndSpices: /\b(?:fenugreek|utskho[- ]suneli|utsho[- ]suneli|uccho[- ]suneli|marigolds?|tagetes|maritsa|chives?|tarragon|chervil|(?:summer|winter) savou?ry|lemongrass|caraway|nigella|juniper|lovage|anise|aniseed|mace|tamarind|galangal|kozieradk\w*|aksamitk\w*|szczypior\w*|estragon\w*|trybul\w*|czabr\w*|trawa cytrynowa|anyz\w*|czarnuszk\w*|jalow\w*|lubczyk\w*|szafran\w*|tamarynd\w*|galang\w*)\b/,
+  spiceBlends: /\b(?:za'?atar|zatar|chaat masala|garam masala|ras el hanout|baharat|dukkah|duqqa)\b/,
   seaVegetables: /\b(?:nori|seaweed|algae|wakame|kombu|kelp|dulse|spirulina|chlorella|agar(?:[- ]agar)?|wodorost\w*|glon\w*)\b/,
 } as const;
 const recognisedPlantAlias = (name: string) => Object.values(plantVocabulary).some(pattern => pattern.test(name));
@@ -114,6 +118,7 @@ function inspectIngredientStatic(ingredient: Ingredient): { evidence?: RecipeDie
     return evidence('vegetarian', 'The base cheese specifies its dietary suitability.');
   }
   if (dairyAndEggs.test(text) || compositionNotes.some(note => dairyAndEggs.test(withoutPlantReplacements(note).text))) return evidence('vegetarian', 'Contains dairy, eggs or honey.');
+  if (bakedDough.test(text) && !explicitVegan.test(name)) return evidence('vegetarian', 'Ready-made dough product that may contain dairy or eggs.');
   if (replacement.plantReplacement || explicitVegan.test(name)) return evidence('vegan', 'An explicitly named plant replacement is used in the base recipe.');
   if (ambiguousCompound.test(name) && (certifiedVegetarianCompound || certifiedVeganCompound)) {
     return evidence(certifiedVeganCompound ? 'vegan' : 'vegetarian', 'The base ingredient note explicitly requires a product suitable for this diet.');
