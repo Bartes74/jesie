@@ -123,7 +123,9 @@ async function main() {
     if (verifyOnly) assert.equal(hasCollectionThemeGuards, true, 'The deployment restore bundle must include the canonical collection security and receipt guards.');
     const hasCollectionAccents = (await source.query("SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='collection_asset_kind_check' AND pg_get_constraintdef(oid) LIKE '%garland%') AS present")).rows[0].present === true;
     if (verifyOnly) assert.equal(hasCollectionAccents, true, 'The deployment restore bundle must include migration 0032.');
-    const schemaChanged = !hasKitchenSchema || !hasPlanMetrics || !hasCostOnly || !hasManualReview || !hasIngredientDictionary || !hasIngredientEvidenceRecheck || !hasCollections || !hasCollectionThemes || !hasCollectionThemeGuards || !hasCollectionAccents;
+    const hasSitePages = (await source.query("SELECT to_regclass('public.site_page') IS NOT NULL AS present")).rows[0].present === true;
+    if (verifyOnly) assert.equal(hasSitePages, true, 'The deployment restore bundle must include migration 0033.');
+    const schemaChanged = !hasKitchenSchema || !hasPlanMetrics || !hasCostOnly || !hasManualReview || !hasIngredientDictionary || !hasIngredientEvidenceRecheck || !hasCollections || !hasCollectionThemes || !hasCollectionThemeGuards || !hasCollectionAccents || !hasSitePages;
     phase = 'local-migration';
     if (!hasKitchenSchema) await source.query(await readFile('migrations/0024-kitchen-experience.sql', 'utf8'));
     if (!hasPlanMetrics) await source.query(await readFile('migrations/0025-plan-metrics.sql', 'utf8'));
@@ -151,6 +153,7 @@ async function main() {
       await source.query(collectionThemeSql.slice(securityStart, securityEnd));
     }
     if (!hasCollectionAccents) await source.query(await readFile('migrations/0032-collection-accents.sql', 'utf8'));
+    if (!hasSitePages) await source.query(await readFile('migrations/0033-site-pages.sql', 'utf8'));
 
     await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     phase = 'local-schema-dump';
@@ -198,6 +201,7 @@ async function main() {
     await source.query(`INSERT INTO public.event_collection_publication(id,collection_id,revision,snapshot,published_by,published_by_name)
       VALUES($1,$2,1,$3,'fixture-owner','Fixture owner')`, [eventPublication, eventId, JSON.stringify(collectionPublicDefinition(eventId, eventContent))]);
     await source.query("UPDATE public.event_collection SET publication_status='published',published_id=$2,published_revision=1,first_published_at=now() WHERE id=$1", [eventId, eventPublication]);
+    await source.query("INSERT INTO public.site_page(id,content,updated_by,updated_by_name) VALUES('about','{\"pl\":{},\"en\":{}}','fixture-owner','Fixture owner')");
     let acceptedMetricRows = 0;
     // Exercise the full pre-0025 path families as well as both new plan routes.
     for (const locale of ['pl', 'en']) for (const suffix of ['', '/o-serwisie', '/kolekcje', '/poradniki', '/recipes/fixture', '/kolekcje/fixture', '/poradniki/fixture', '/plan']) {
