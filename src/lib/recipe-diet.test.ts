@@ -40,10 +40,18 @@ test('ready-made doughs and butter biscuits are vegetarian without ingredient ve
 });
 
 test('dry spice blends are recognised plant ingredients', () => {
-  for (const name of ['za’atar', "za'atar", 'zaatar', 'chaat masala', 'garam masala', 'ras el hanout']) {
+  for (const name of ['za’atar', "za'atar", 'zaatar', 'chaat masala', 'garam masala', 'ras el hanout', 'amchur', 'pimentón de la Vera', 'cukier jaggery', 'jaggery']) {
     assert.equal(getRecipeDiet(recipe('carrots', name)), 'vegan', name);
     assert.deepEqual(unrecognisedRecipeIngredientNames(recipe(name).ingredients), [], name);
   }
+});
+
+test('spring onion names, sake and Polish mussel names are recognised', () => {
+  for (const name of ['zielona część dymki', 'dymka', 'scallions', 'sake']) {
+    assert.equal(getRecipeDiet(recipe('aubergine', name)), 'vegan', name);
+    assert.deepEqual(unrecognisedRecipeIngredientNames(recipe(name).ingredients), [], name);
+  }
+  for (const name of ['świeże, żywe mule w muszlach', 'mule', 'mulami']) assert.equal(getRecipeDiet(recipe('olive oil', name)), 'meat', name);
 });
 
 test('Polish peanut names and inflections need no ingredient verification', () => {
