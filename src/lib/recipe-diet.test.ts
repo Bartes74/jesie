@@ -51,7 +51,8 @@ test('spring onion names, sake and Polish mussel names are recognised', () => {
     assert.equal(getRecipeDiet(recipe('aubergine', name)), 'vegan', name);
     assert.deepEqual(unrecognisedRecipeIngredientNames(recipe(name).ingredients), [], name);
   }
-  for (const name of ['świeże, żywe mule w muszlach', 'mule', 'mulami']) assert.equal(getRecipeDiet(recipe('olive oil', name)), 'meat', name);
+  for (const name of ['mielone nasiona kopru włoskiego', 'koperek']) assert.equal(getRecipeDiet(recipe('carrots', name)), 'vegan', name);
+  for (const name of ['gotowy pieczony rostbef, schłodzony, w bardzo cienkich plastrach', 'świeże, żywe mule w muszlach', 'mule', 'mulami']) assert.equal(getRecipeDiet(recipe('olive oil', name)), 'meat', name);
 });
 
 test('Polish peanut names and inflections need no ingredient verification', () => {
