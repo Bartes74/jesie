@@ -109,6 +109,22 @@ interrupted run can resume with the same backup directory. Keep the `.source`,
 `.webp` and JSON proof files together; the verified replacement can be restored
 from its matching `.webp` file without changing any asset or publication record.
 
+Delivery sources (an asset's `blob_pathname` that is not an editing archive)
+can also be re-encoded as WebP q95 with lossless alpha. Lossless editing
+archives are never touched. Each file must keep its dimensions and exact alpha
+and reach a mean SSIM of at least 0.98 against its current pixels; a file that
+misses the gate keeps its bytes. `--dry-run` reads and encodes without writing:
+
+```sh
+npm run media:compact -- --env=.env.production.local --lossy --dry-run
+npm run media:compact -- --env=.env.production.local --lossy --apply --backup=/absolute/private/backup
+```
+
+The apply run uses the same backup, upload proof, append-only redirect and
+resume rules as lossless compaction; the JSON proof records the SSIM. Existing
+delivery variants keep their logical key and stay valid; public `/media/<id>`
+URLs and publication snapshots do not change.
+
 `--reserve-week` stops once at least 350 MB of headroom is available. Future
 capacity depends on the actual photographs and needs periodic maintenance.
 

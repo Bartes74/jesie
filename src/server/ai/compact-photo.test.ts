@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
-import { compactPhoto, losslessPhoto } from './compact-photo';
+import { compactPhoto, deliveryQuality, losslessPhoto, minimumDeliverySsim } from './compact-photo';
 
 test('the editing archive preserves full resolution, exact alpha and color beneath transparent pixels', async () => {
   const width = 40, height = 30;
@@ -70,6 +70,16 @@ test('cutout and step delivery sources are lossy but keep exact alpha and opacit
   assert.deepEqual(await alpha(result.web), await alpha(cutout), 'The silhouette used for shadows and footprints is unchanged.');
   const step = await compactPhoto(original, original, false);
   assert.equal((await sharp(step.web).stats()).isOpaque, true, 'An opaque step photo gains no transparency.');
+  const quality = await deliveryQuality(cutout, result.web);
+  assert(quality.sameSize && quality.alphaExact && quality.ssim >= minimumDeliverySsim, 'The delivery source passes the recompression quality gate.');
+});
+
+test('the quality gate rejects visibly degraded photos and changed alpha', async () => {
+  const photo = readFileSync(new URL('../../../public/images/steps-lemon-pasta.webp', import.meta.url));
+  const degraded = await sharp(photo).webp({ quality: 20 }).toBuffer();
+  assert((await deliveryQuality(photo, degraded)).ssim < minimumDeliverySsim);
+  const faded = await sharp(photo).ensureAlpha(0.5).png().toBuffer();
+  assert.equal((await deliveryQuality(photo, faded)).alphaExact, false);
 });
 
 test('flat artwork keeps the smaller exact file instead of a larger lossy one', async () => {

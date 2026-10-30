@@ -5,10 +5,14 @@ import { config } from 'dotenv';
 import { Client } from 'pg';
 import { del, get, list, put } from '@vercel/blob';
 import sharp from 'sharp';
+import { deliveryQuality, lossyDeliveryPhoto, minimumDeliverySsim } from '../src/server/ai/compact-photo';
 
 const option = (name: string) => process.argv.find(value => value.startsWith(name + '='))?.slice(name.length + 1);
 const apply = process.argv.includes('--apply');
 const purge = process.argv.includes('--purge-cache');
+// Lossy mode re-encodes only delivery sources; lossless editing archives are never touched.
+const lossy = process.argv.includes('--lossy');
+const dryRun = process.argv.includes('--dry-run');
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const maximum = 32 * 1024 * 1024;
 const minimumFree = 64 * 1024 * 1024;
@@ -55,6 +59,8 @@ async function pixels(bytes: Buffer) {
 async function main() {
   if (!process.env.DATABASE_URL || !process.env.BLOB_READ_WRITE_TOKEN) throw new Error('DATABASE_AND_STORAGE_REQUIRED');
   if (apply && !purge && (!backup || !isAbsolute(backup))) throw new Error('ABSOLUTE_PRIVATE_BACKUP_REQUIRED');
+  if (apply && dryRun) throw new Error('DRY_RUN_CANNOT_APPLY');
+  if (dryRun && !lossy) throw new Error('DRY_RUN_REQUIRES_LOSSY');
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   const db = new Client({ connectionString: maintenanceConnectionString(), connectionTimeoutMillis: 10_000, application_name: 'jesie-media-compaction-direct' });
   maintenanceStage = 'database_connect';
@@ -97,13 +103,6 @@ async function main() {
     if (!tableExists.rows[0].name) throw new Error('MEDIA_MIGRATION_REQUIRED');
     const mappings = (await db.query('SELECT * FROM media_compaction')).rows;
     const mapped = new Map(mappings.map(row => [row.source_pathname, row]));
-    const candidates = inventory.filter(blob => blob.pathname.startsWith('ai/') && !blob.pathname.startsWith('ai/compact/')
-      && (registered.has(blob.pathname) || /\/recovered-original\.(?:png|webp)$/.test(blob.pathname)))
-      .sort((a, b) => b.size - a.size);
-    console.log(JSON.stringify({ mode: apply ? 'verified-lossless-compaction' : 'compaction-plan', candidates: candidates.length, bytes: usedBytes, sourceBackupsRequired: true, immutableAssetRecordsChanged: false }));
-    if (!apply) return;
-    maintenanceStage = 'private_backup_directory';
-    await mkdir(backup!, { recursive: true, mode: 0o700 });
     const download = async (pathname: string) => {
       const blob = await get(pathname, { access: 'private', useCache: false, token });
       if (!blob || blob.statusCode !== 200 || blob.blob.size > maximum) throw new Error('SOURCE_READ_UNAVAILABLE');
@@ -111,6 +110,86 @@ async function main() {
       if (bytes.length > maximum) throw new Error('SOURCE_TOO_LARGE');
       return bytes;
     };
+    if (lossy) {
+      // Only a separate delivery source qualifies: an asset whose blob is also an
+      // editing archive (its own or another asset's) keeps its lossless bytes.
+      const archives = new Set<string>(assets.map(row => row.original_blob_pathname).filter(Boolean));
+      const sources = new Set<string>(assets.filter(row => row.original_blob_pathname && row.blob_pathname !== row.original_blob_pathname).map(row => row.blob_pathname));
+      const deliveries = inventory.filter(blob => sources.has(blob.pathname) && !archives.has(blob.pathname)
+        && blob.pathname.startsWith('ai/') && !blob.pathname.startsWith('ai/compact/')).sort((a, b) => b.size - a.size);
+      console.log(JSON.stringify({ mode: apply ? 'quality-gated-lossy-compaction' : dryRun ? 'lossy-dry-run' : 'lossy-plan', candidates: deliveries.length, bytes: usedBytes, minimumSsim: minimumDeliverySsim, editingArchivesChanged: false }));
+      if (!apply && !dryRun) return;
+      if (apply) { maintenanceStage = 'private_backup_directory'; await mkdir(backup!, { recursive: true, mode: 0o700 }); }
+      let files = 0, rejected = 0, unchanged = 0, sourceBytes = 0, targetBytes = 0, worstSsim = 1;
+      for (const candidate of deliveries) {
+        maintenanceStage = 'read_source';
+        const original = await download(candidate.pathname);
+        if (original.length !== candidate.size) throw new Error('SOURCE_SIZE_CHANGED');
+        const mapping = mapped.get(candidate.pathname);
+        if (mapping) {
+          // Resume after a crash between the redirect and the source removal.
+          if (!apply) continue;
+          maintenanceStage = 'verify_existing_lossy_mapping';
+          const replacement = await download(mapping.target_pathname);
+          const retained = await readFile(resolve(backup!, mapping.source_sha256 + '.source'));
+          if (sha(original) !== mapping.source_sha256 || sha(retained) !== mapping.source_sha256 || sha(replacement) !== mapping.target_sha256) throw new Error('EXISTING_COMPACTION_PROOF_MISMATCH');
+          const quality = await deliveryQuality(original, replacement);
+          if (!quality.sameSize || !quality.alphaExact || quality.ssim < minimumDeliverySsim) throw new Error('EXISTING_COMPACTION_QUALITY_MISMATCH');
+          maintenanceStage = 'remove_verified_mapped_source';
+          await del(candidate.pathname, { token }); usedBytes -= candidate.size;
+          continue;
+        }
+        maintenanceStage = 'decode_source_metadata';
+        const metadata = await sharp(original, { limitInputPixels: 8_500_000, failOn: 'error' }).metadata();
+        if ((metadata.pages ?? 1) !== 1 || (metadata.orientation ?? 1) !== 1 || metadata.depth !== 'uchar') { unchanged++; continue; }
+        maintenanceStage = 'lossy_webp_encoding';
+        const encoded = await lossyDeliveryPhoto(original);
+        if (encoded.length + 1024 >= original.length) { unchanged++; continue; }
+        maintenanceStage = 'verify_delivery_quality';
+        const quality = await deliveryQuality(original, encoded);
+        // A file that misses the gate keeps its current bytes.
+        if (!quality.sameSize || !quality.alphaExact || quality.ssim < minimumDeliverySsim) { rejected++; continue; }
+        worstSsim = Math.min(worstSsim, quality.ssim);
+        sourceBytes += original.length; targetBytes += encoded.length; files++;
+        if (!apply) continue;
+        const sourceHash = sha(original), targetHash = sha(encoded);
+        const target = 'ai/compact/v1/' + targetHash + '.webp';
+        const existing = byPath.get(target);
+        if (!existing && usedBytes + encoded.length > storageLimit - 1024 * 1024) throw new Error('INSUFFICIENT_TEMPORARY_CAPACITY');
+        const after = await pixels(encoded);
+        maintenanceStage = 'write_private_backups';
+        await writeFile(resolve(backup!, sourceHash + '.source'), original, { mode: 0o600 });
+        await writeFile(resolve(backup!, targetHash + '.webp'), encoded, { mode: 0o600 });
+        if (sha(await readFile(resolve(backup!, sourceHash + '.source'))) !== sourceHash) throw new Error('LOCAL_BACKUP_VERIFICATION_FAILED');
+        if (!existing) {
+          maintenanceStage = 'upload_lossy_target';
+          await put(target, encoded, { token, access: 'private', contentType: 'image/webp', addRandomSuffix: false, allowOverwrite: false });
+          usedBytes += encoded.length;
+          byPath.set(target, { ...candidate, pathname: target, size: encoded.length });
+        }
+        maintenanceStage = 'verify_uploaded_target';
+        if (sha(await download(target)) !== targetHash) throw new Error('UPLOADED_COPY_VERIFICATION_FAILED');
+        // pixel_sha256 records the decoded replacement; the SSIM proof is kept beside the backup.
+        const proof = { source: candidate.pathname, target, sourceHash, targetHash, pixelHash: after.hash, ssim: quality.ssim, alphaExact: true, width: after.width, height: after.height, sourceBytes: original.length, targetBytes: encoded.length };
+        maintenanceStage = 'write_private_recovery_manifest';
+        await writeFile(resolve(backup!, sha(Buffer.from(candidate.pathname)) + '.json'), JSON.stringify(proof, null, 2), { mode: 0o600 });
+        maintenanceStage = 'commit_compaction_mapping';
+        await db.query('INSERT INTO media_compaction(source_pathname,target_pathname,source_sha256,target_sha256,pixel_sha256,source_bytes,target_bytes,width,height) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)', [candidate.pathname, target, sourceHash, targetHash, after.hash, original.length, encoded.length, after.width, after.height]);
+        maintenanceStage = 'remove_verified_source';
+        await del(candidate.pathname, { token });
+        usedBytes -= candidate.size;
+        console.log(JSON.stringify({ files, ssim: +quality.ssim.toFixed(4), pathname: candidate.pathname }));
+      }
+      console.log(JSON.stringify({ finished: true, dryRun, files, rejectedByQuality: rejected, unchanged, sourceBytes, targetBytes, savedBytes: sourceBytes - targetBytes, worstSsim: +worstSsim.toFixed(4), usedBytes }));
+      return;
+    }
+    const candidates = inventory.filter(blob => blob.pathname.startsWith('ai/') && !blob.pathname.startsWith('ai/compact/')
+      && (registered.has(blob.pathname) || /\/recovered-original\.(?:png|webp)$/.test(blob.pathname)))
+      .sort((a, b) => b.size - a.size);
+    console.log(JSON.stringify({ mode: apply ? 'verified-lossless-compaction' : 'compaction-plan', candidates: candidates.length, bytes: usedBytes, sourceBackupsRequired: true, immutableAssetRecordsChanged: false }));
+    if (!apply) return;
+    maintenanceStage = 'private_backup_directory';
+    await mkdir(backup!, { recursive: true, mode: 0o700 });
     let savedBytes = 0, files = 0;
     for (const candidate of candidates) {
       if (mapped.has(candidate.pathname)) {
