@@ -4,20 +4,6 @@ import type { RecipeDietId } from '@/lib/recipe-diet';
 export const trendPlatforms: TrendPlatform[] = ['instagram', 'tiktok', 'pinterest', 'youtube', 'web'];
 export function warsawDate(now = new Date()) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now); }
 export function normaliseDish(value: string) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, ' ').trim(); }
-/** The dish name before its first accompaniment or style, e.g. "zupa cebulowa" in "Zupa cebulowa po francusku z grzankami". */
-function dishHead(value: string) {
-    const words = normaliseDish(value).split(' ').filter(Boolean);
-    const end = words.findIndex(word => ['z', 'ze', 'w', 'we', 'po', 'na', 'with', 'in', 'on', 'and', 'i'].includes(word));
-    return new Set(end === -1 ? words : words.slice(0, end));
-}
-/** "Francuska zupa cebulowa z grzankami" and "Zupa cebulowa z grzanką serową" share a two-word dish head in every common language. */
-function sameDishHead(a: Localised, b: Localised) {
-    const languages = (['pl', 'en'] as const).filter(language => a[language]?.trim() && b[language]?.trim());
-    return languages.length > 0 && languages.every(language => {
-        const [left, right] = [dishHead(a[language]), dishHead(b[language])].sort((x, y) => x.size - y.size);
-        return left.size >= 2 && [...left].every(word => right.has(word));
-    });
-}
 export function publicSourceUrl(value: string): string | null {
     try {
         const url = new URL(value);
@@ -168,7 +154,7 @@ export function rankCandidates(raw: RawCandidate[], allowedUrls: string[], exist
         const names = [key, normaliseDish(candidate.title.pl), normaliseDish(candidate.title.en), ...candidate.aliases.map(normaliseDish)].filter(Boolean);
         const exact = existing.find(d => [normaliseDish(d.title.pl), normaliseDish(d.title.en), ...(d.aliases ?? []).map(normaliseDish)].some(name => names.includes(name)));
         const wordSet = new Set(names.join(' ').split(' '));
-        const similar = existing.find(d => { const words = new Set(normaliseDish(`${d.title.pl} ${d.title.en}`).split(' ')); const shared = [...words].filter(w => w.length > 3 && wordSet.has(w)).length; return shared >= 2 && shared / Math.min(words.size, wordSet.size) >= .65 || sameDishHead(d.title, candidate.title); });
+        const similar = existing.find(d => { const words = new Set(normaliseDish(`${d.title.pl} ${d.title.en}`).split(' ')); const shared = [...words].filter(w => w.length > 3 && wordSet.has(w)).length; return shared >= 2 && shared / Math.min(words.size, wordSet.size) >= .65; });
         const independentSources = new Set(sources.map(s => s.independentKey).filter(key => key !== 'social:unverified')).size;
         const social = sources.some(s => s.platform !== 'web' && s.independentKey !== 'social:unverified');
         // Interest must be grounded in a quoted textual claim, never an invented numeric metric.

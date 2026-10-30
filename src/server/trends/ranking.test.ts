@@ -21,15 +21,6 @@ test('unknown citations, stale dates, future dates and duplicate copied sources 
 } });
 test('creator crossposts count once despite forged independent keys', () => { const c = candidate(); c.sources[0].url = 'https://www.instagram.com/two/reel/post/'; assert.equal(rankCandidates([c], allowed(c), [], 'run', now)[0].eligible, false); });
 test('a potrawa with an existing English name or alias is not regenerated', () => { const c = candidate(); const existing = [{ id: 'already', title: { pl: 'Inna nazwa', en: 'Crunchy rice salad' } }]; const r = rankCandidates([c], allowed(c), existing, 'run', now)[0]; assert.equal(r.eligible, false); assert.equal(r.duplicateRecipeId, 'already'); });
-test('a reworded existing onion soup blocks a second automatic draft, while distinct soups stay new', () => {
-    const idea: RawCandidate = { dishKey: 'onion soup with cheese toast', title: { pl: 'Zupa cebulowa z grzanką serową', en: 'Onion soup with cheese toast' }, aliases: [], rationale: 'Sezonowy pomysł.', sources: [] };
-    for (const title of [{ pl: 'Francuska zupa cebulowa z grzankami', en: 'French onion soup with croutons' }, { pl: 'Zupa cebulowa po francusku', en: 'French onion soup' }, { pl: 'Zupa cebulowa po francusku', en: '' }]) {
-        const [result] = rankCandidates([structuredClone(idea)], [], [{ id: 'onion', title }], 'run', now);
-        assert.equal(result.duplicateRecipeId, 'onion', title.pl); assert.equal(result.eligible, false);
-    }
-    const pumpkin: RawCandidate = { ...structuredClone(idea), dishKey: 'pumpkin cream soup', title: { pl: 'Zupa krem z dyni', en: 'Pumpkin cream soup' } };
-    assert.equal(rankCandidates([pumpkin], [], [{ id: 'tomato', title: { pl: 'Zupa krem z pomidorów', en: 'Tomato cream soup' } }], 'run', now)[0].duplicateRecipeId, null);
-});
 test('sources without an interest claim or social coverage are rejected', () => { const c = candidate(); for (const s of c.sources) {
     s.interestEvidence = '';
     s.excerpt = 'A fresh rice salad recipe with crisp vegetables.';
