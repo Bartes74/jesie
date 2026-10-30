@@ -1136,7 +1136,10 @@ test('ordinary ceramic heroes normalize negligible alpha residue before validati
     assert(result.done);assert.equal(result.asset.hasTransparency,true);
     const output=await sharp(storage.saved.get(result.asset.blobPathname)!).ensureAlpha().raw().toBuffer();
     assert.equal(output[3],0);assert.equal(output[(500*width+500)*4+3],255);assert.equal(output[(500*width+199)*4+3],100);
-    for(let pixel=0;pixel<width*height;pixel++)assert.deepEqual(output.subarray(pixel*4,pixel*4+3),pixels.subarray(pixel*4,pixel*4+3));
+    // The delivery source is lossy RGB with lossless alpha; the archive below keeps exact RGB.
+    let error=0,visible=0;
+    for(let pixel=0;pixel<width*height;pixel++)if(output[pixel*4+3]===255){visible++;for(let channel=0;channel<3;channel++)error+=Math.abs(output[pixel*4+channel]-pixels[pixel*4+channel]);}
+    assert(visible>0&&error/(visible*3)<4,'Normalization changes alpha only; compression keeps visible RGB close to the source.');
     assert.deepEqual(await sharp(storage.saved.get(result.asset.originalBlobPathname)!).ensureAlpha().raw().toBuffer(),pixels,'The exact accepted original remains available.');
     assert(!storage.saved.has('ai/standard-alpha-residue/recovered-original.webp'));
   });
@@ -1204,13 +1207,25 @@ async function cornerHandleHeroFixture() {
   return { width, height, pixels, normalized, png: await sharp(pixels, { raw: { width, height, channels: 4 } }).png().toBuffer() };
 }
 
+/** Delivery sources are lossy RGB with lossless alpha: alpha must match exactly, visible RGB closely. */
+function assertDeliveryPixels(actual: Buffer, expected: Buffer, message: string) {
+  assert.equal(actual.length, expected.length, message);
+  let alphaMismatches = 0, error = 0, visible = 0;
+  for (let offset = 0; offset < actual.length; offset += 4) {
+    if (actual[offset + 3] !== expected[offset + 3]) alphaMismatches++;
+    if (expected[offset + 3] === 255) { visible++; for (let channel = 0; channel < 3; channel++) error += Math.abs(actual[offset + channel] - expected[offset + channel]); }
+  }
+  assert.equal(alphaMismatches, 0, message);
+  assert(!visible || error / (visible * 3) < 4, message);
+}
+
 async function assertPaddedHeroPreservesFrame(bytes: Buffer, fixture: Awaited<ReturnType<typeof cornerHandleHeroFixture>>) {
   const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   assert(info.width > fixture.width && info.height > fixture.height, 'Existing handle pixels get empty canvas rather than being erased.');
   const left = (info.width - fixture.width) / 2, top = (info.height - fixture.height) / 2;
   assert(Number.isSafeInteger(left) && left > 0 && Number.isSafeInteger(top) && top > 0);
   const preserved = await sharp(bytes).extract({ left, top, width: fixture.width, height: fixture.height }).ensureAlpha().raw().toBuffer();
-  assert.deepEqual(preserved, fixture.normalized, 'Every source RGB, food pixel and genuine aperture remains unchanged apart from alpha endpoint cleanup.');
+  assertDeliveryPixels(preserved, fixture.normalized, 'Every food pixel and genuine aperture keeps its alpha; visible RGB stays within delivery compression.');
   for (const pixel of [0, info.width - 1, (info.height - 1) * info.width, info.width * info.height - 1]) assert.equal(data[pixel * 4 + 3], 0);
   await validateSolidHeroCutout(bytes);
 }
@@ -2226,6 +2241,7 @@ test('a repair submission resends stable instructions, strict schema and exact i
     assert.equal('tools' in request, false); assert.equal('tool_choice' in request, false);
     assert.match(request.instructions, /meticulous culinary editor/); assert.match(request.instructions, /entire method/);
     assert.deepEqual(JSON.parse(request.input).validationIssues, issues);
+    assert.deepEqual(Object.keys(JSON.parse(request.input)), ['brief', 'validationIssues'], 'The chained response already holds the source; it is not billed twice.');
     assert.ok(request.text.format.schema.required?.includes('researchSources'));
     let posts = 0;
     t.mock.method(globalThis, 'fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
