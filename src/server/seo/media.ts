@@ -131,8 +131,10 @@ export async function renderPublishedHeroMaster(source: Buffer): Promise<Deliver
   assertRasterSource(source);
   const display = await normalizeHeroPresentation(source);
   const normalized = display?.bytes ?? source;
-  let result = await sharp(normalized, { limitInputPixels: maximumPixels, failOn: 'error' }).webp({ lossless: true, effort: 4 }).toBuffer();
-  if (result.length > maximumDeliveryBytes) result = await sharp(normalized, { limitInputPixels: maximumPixels, failOn: 'error' }).webp({ quality: 92, alphaQuality: 100, effort: 5 }).toBuffer();
+  // Lossless alpha keeps the cutout edge; photographic RGB is far smaller lossy. Keep the smaller file.
+  const exact = await sharp(normalized, { limitInputPixels: maximumPixels, failOn: 'error' }).webp({ lossless: true, effort: 4 }).toBuffer();
+  const lossy = await sharp(normalized, { limitInputPixels: maximumPixels, failOn: 'error' }).webp({ quality: 92, alphaQuality: 100, effort: 5 }).toBuffer();
+  const result = lossy.length < exact.length ? lossy : exact;
   if (result.length > maximumDeliveryBytes) throw new Error('Prepared hero exceeds the delivery limit');
   const metadata = await sharp(result, { limitInputPixels: maximumPixels, failOn: 'error' }).metadata();
   if (!metadata.width || !metadata.height) throw new Error('Invalid hero dimensions');
