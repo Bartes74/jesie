@@ -62,7 +62,7 @@ async function main() {
   if (apply && dryRun) throw new Error('DRY_RUN_CANNOT_APPLY');
   if (dryRun && !lossy) throw new Error('DRY_RUN_REQUIRES_LOSSY');
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  const db = new Client({ connectionString: maintenanceConnectionString(), connectionTimeoutMillis: 10_000, application_name: 'jesie-media-compaction-direct' });
+  const db = new Client({ connectionString: maintenanceConnectionString(), connectionTimeoutMillis: 10_000, keepAlive: true, application_name: 'jesie-media-compaction-direct' });
   maintenanceStage = 'database_connect';
   await db.connect();
   let locked = false;
@@ -122,6 +122,8 @@ async function main() {
       if (apply) { maintenanceStage = 'private_backup_directory'; await mkdir(backup!, { recursive: true, mode: 0o700 }); }
       let files = 0, rejected = 0, unchanged = 0, sourceBytes = 0, targetBytes = 0, worstSsim = 1;
       for (const candidate of deliveries) {
+        // Image work leaves the session idle; a ping keeps it and its advisory lock alive.
+        await db.query('SELECT 1');
         maintenanceStage = 'read_source';
         const original = await download(candidate.pathname);
         if (original.length !== candidate.size) throw new Error('SOURCE_SIZE_CHANGED');
@@ -192,6 +194,7 @@ async function main() {
     await mkdir(backup!, { recursive: true, mode: 0o700 });
     let savedBytes = 0, files = 0;
     for (const candidate of candidates) {
+      await db.query('SELECT 1');
       if (mapped.has(candidate.pathname)) {
         // A crash after registering a redirect but before deletion is harmless.
         const mapping = mapped.get(candidate.pathname)!;
