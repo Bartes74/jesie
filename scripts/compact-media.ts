@@ -16,9 +16,12 @@ const dryRun = process.argv.includes('--dry-run');
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const maximum = 32 * 1024 * 1024;
 const minimumFree = 64 * 1024 * 1024;
-const storageLimit = 1_000_000_000;
 const backup = option('--backup');
 config({ path: option('--env') || '.env.local', quiet: true });
+// Mirrors photoStorageMaximumBytes (capacity.ts is server-only): the Hobby 1 GB unless BLOB_STORAGE_LIMIT_BYTES is set.
+const configuredLimit = process.env.BLOB_STORAGE_LIMIT_BYTES;
+const storageLimit = configuredLimit === undefined ? 1_000_000_000 : /^[1-9][0-9]*$/.test(configuredLimit) && Number.isSafeInteger(Number(configuredLimit)) && Number(configuredLimit) > minimumFree ? Number(configuredLimit) : NaN;
+if (Number.isNaN(storageLimit)) throw new Error('INVALID_BLOB_STORAGE_LIMIT');
 let maintenanceStage = 'configuration';
 let failureDiagnostic: ReturnType<typeof safeDiagnostic> | undefined;
 function safeDiagnostic(error: unknown) {
