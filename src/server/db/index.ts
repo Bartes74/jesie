@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 import { editorialSchema } from './schema';
 import { authSchema } from './auth-schema';
 import { aiSchema } from '../ai/schema';
+import { recipeResponses, recipeManualRepairs } from '../ai/recipe-checkpoint-schema';
 import { trendSchema } from '../trends/schema';
 import { collectionSchema } from '../collections/schema';
 import { collectionThemeSchema } from '../collections/theme-schema';
@@ -16,7 +17,7 @@ function createDatabase() {
   const pool = new Pool({ connectionString, max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 });
   // pg emits idle connection failures; handle them without logging credentials.
   pool.on('error', () => { console.error('An idle database connection was closed.'); });
-  return { pool, db: drizzle(pool, { schema: { ...editorialSchema, ...authSchema, ...aiSchema, ...trendSchema, ...collectionSchema, ...collectionThemeSchema } }) };
+  return { pool, db: drizzle(pool, { schema: { ...editorialSchema, ...authSchema, ...aiSchema, recipeResponses, recipeManualRepairs, ...trendSchema, ...collectionSchema, ...collectionThemeSchema } }) };
 }
 
 /** No connection is created or requested during module evaluation/build. */

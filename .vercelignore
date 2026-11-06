@@ -9,6 +9,7 @@ CLAUDE.md
 artifacts/
 node_modules/
 .git/
+.claude/
 
 .env*
 .next/

@@ -8,7 +8,11 @@ import { lookupExactAliases } from './ingredient-dictionary-store';
 export async function getRecipeVerifiedAliases(
   ingredients: readonly Ingredient[],
   db?: Parameters<typeof lookupExactAliases>[1],
+  recipeId?: string,
 ): Promise<VerifiedIngredientDictionary> {
   const names = unrecognisedRecipeIngredientNames(ingredients);
-  return names.length ? lookupExactAliases(names, db) : new Map();
+  const aliases = names.length ? await lookupExactAliases(names, db) : new Map();
+  if (!recipeId) return aliases;
+  const { recipeReviewedAliases } = await import('./recipe-checkpoint');
+  return recipeReviewedAliases(recipeId, ingredients, aliases, db);
 }

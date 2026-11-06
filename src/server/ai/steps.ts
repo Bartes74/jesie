@@ -14,6 +14,7 @@ import { AiError } from './errors';
 import { TrendError } from '@/server/trends/store';
 import { admitManualHeroCutout } from './manual-hero-recovery';
 import { resolveRecipeIngredients } from './recipe-ingredient-resolution';
+import { recipeResponseCheckpoint } from './recipe-checkpoint';
 
 export async function prepareManualHeroCutout(id: string, workflowRunId: string) {
   'use step';
@@ -99,7 +100,7 @@ export async function pollGeneration(id: string, existingRecipeOnly = false) {
     if (job.kind === 'recipe') {
       const recovery = await recipeRecoverySubmission(id);
       const result = await pollText(job.model, job.providerRequestId, job.input, recovery.ancestorRequestIds,
-        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }));
+        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }), recipeResponseCheckpoint(job.id));
       if (!result.done) return false;
       await finishRecipe(id, result.content, result.cost, result.notes, { verifiedResearchSources: true });
     } else {

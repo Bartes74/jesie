@@ -1,0 +1,17 @@
+.recipe-recovery-editor { max-width: 1000px; }
+.recipe-recovery-editor > .admin-text-link { margin-bottom: 20px; }
+.recipe-recovery-editor .admin-page-heading p { max-width: 760px; line-height: 1.8; }
+.recipe-recovery-editor .admin-editor-section,
+.recipe-recovery-issues { padding-block: 24px; border-top: 1px solid var(--admin-line); }
+.recipe-recovery-editor h2 { font-size: 24px; margin-bottom: 12px; }
+.recipe-recovery-editor .admin-editor-section > p,
+.recipe-recovery-editor form > p,
+.recipe-recovery-issues li { font-size: 13px; line-height: 1.8; color: var(--admin-muted); }
+.recipe-recovery-ingredients { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 24px; }
+.recipe-recovery-editor details > summary { cursor: pointer; min-height: 44px; font-weight: 600; font-size: 13px; padding-block: 12px; }
+.recipe-recovery-editor details > p { margin-block: 12px; }
+.recipe-recovery-editor details li { overflow-wrap: anywhere; line-height: 1.8; font-size: 12px; }
+.recipe-recovery-editor fieldset > .admin-field { margin-block: 24px; }
+.recipe-recovery-editor form > p { margin-block: 20px; }
+.recipe-recovery-editor .admin-button { white-space: normal; }
+@media (max-width: 680px) { .recipe-recovery-ingredients { grid-template-columns: 1fr; } }

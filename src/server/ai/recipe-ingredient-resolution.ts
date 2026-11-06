@@ -1,7 +1,7 @@
 import 'server-only';
 import type { EditorialContent, SourceReference } from '@/lib/editorial-types';
 import type { Ingredient } from '@/lib/recipes';
-import { inspectRecipeDiet, unrecognisedRecipeIngredientNames, type RecipeDietId } from '@/lib/recipe-diet';
+import { inspectRecipeDiet, unrecognisedRecipeIngredientNames, type VerifiedIngredientDictionary } from '@/lib/recipe-diet';
 import { ingredientEvidencePolicyVersion, normalizeIngredientVerificationName, type IngredientVerificationInput, type IngredientVerificationResult } from '@/lib/ingredient-verification';
 import { capturedRecipeProposalSchema } from './recipe-proposal';
 import { ProviderError } from './provider-error';
@@ -15,7 +15,7 @@ type Verification = {
   eligibilityPolicyVersion?: string;
 };
 export type IngredientResolutionDependencies = {
-  aliases(names: string[]): Promise<ReadonlyMap<string, RecipeDietId>>;
+  aliases(names: string[]): Promise<VerifiedIngredientDictionary>;
   find(input: IngredientVerificationInput): Promise<Verification | null>;
   checkPermission(): Promise<void>;
   claim(input: IngredientVerificationInput): Promise<{ verification: Verification; claimed: boolean; claimToken?: string }>;
@@ -59,7 +59,7 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
     const ingredients: Ingredient[] = parsed.data.ingredients.map(({ note, ...item }) => ({ ...item,
       ...(note ? { note } : {}) }));
     const candidates = ingredients.filter(unknownBase);
-    if (!candidates.length) return empty;
+    if (!candidates.length) return { ...empty, dictionary: await deps.aliases(ingredients.flatMap(item => [item.name.pl, item.name.en])) };
     const allNames = candidates.flatMap(item => [item.name.pl, item.name.en]);
     let dictionary = await deps.aliases(allNames);
     const notes: string[] = [], sources: SourceReference[] = [];
@@ -70,6 +70,10 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
       if (seen.has(identity)) continue;
       seen.add(identity);
       const namesKnown = () => unrecognisedRecipeIngredientNames([ingredient]).every(name => dictionary.has(normalizeIngredientVerificationName(name)));
+      if (namesKnown() && Object.values(ingredient.name).some(name => dictionary.reviewedNames?.has(normalizeIngredientVerificationName(name)))) {
+        notes.push(`Administrator sprawdził składnik „${ingredient.name.pl || ingredient.name.en}”. Zachowano decyzję w historii tego przepisu.`);
+        continue;
+      }
       let row = await deps.find(query);
       if (row?.errorCode === 'INGREDIENT_ALIAS_CONFLICT') {
         // Reconcile immutable, already-paid evidence locally. A former false
@@ -157,7 +161,11 @@ export async function resolveRecipeIngredients(job: { id: string; recipeId: stri
   const provider = await import('./ingredient-verification-provider');
   const jobs = await import('./store');
   return recipeIngredientResolver(job.input, {
-    aliases: names => store.lookupExactAliases(names),
+    aliases: async names => {
+      const { recipeReviewedAliases } = await import('./recipe-checkpoint');
+      const parsed = capturedRecipeProposalSchema(job.input).safeParse(raw);
+      return recipeReviewedAliases(job.recipeId, parsed.success ? parsed.data.ingredients : [], await store.lookupExactAliases(names));
+    },
     find: query => store.getVerification(store.ingredientVerificationKey(query)),
     checkPermission: () => jobs.ensureIngredientVerificationAllowed(job.id),
     claim: query => store.startOrClaimVerification(query, { originJobId: job.id, originRecipeId: job.recipeId }),

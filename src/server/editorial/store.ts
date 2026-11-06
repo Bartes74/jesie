@@ -58,7 +58,7 @@ async function parseContent(input: unknown, db: Database | Transaction): Promise
   rejectIngredientPhotoIssues(ingredientPhotoIssues(result.data as EditorialContent));
   rejectRecipePhotoIssues(recipePhotoAssignmentIssues(result.data as EditorialContent));
   if (result.data.recipe.ingredients.length) result.data.recipe.diet = classifyRecipeDiet(result.data.recipe,
-    await getRecipeVerifiedAliases(result.data.recipe.ingredients, db));
+    await getRecipeVerifiedAliases(result.data.recipe.ingredients, db, result.data.recipe.id));
   return result.data as EditorialContent;
 }
 
@@ -157,7 +157,7 @@ export async function verifiedPublicationIssues(content: EditorialContent, db: D
   // The route shape alone grants no trust: only immutable, registered assets pass.
   const assets = ids.length ? await db.select({ id: aiAssets.id, kind: aiAssets.kind }).from(aiAssets).where(inArray(aiAssets.id, ids)) : [];
   const evidence = await ingredientPhotoSourceEvidence(content, db);
-  const verifiedAliases = await getRecipeVerifiedAliases(content.recipe.ingredients, db);
+  const verifiedAliases = await getRecipeVerifiedAliases(content.recipe.ingredients, db, content.recipe.id);
   const issues = [...publicationIssues(content, new Map(assets.map(asset => [`/media/${asset.id}`, asset.kind])), undefined, verifiedAliases), ...ingredientPhotoIssues(content, evidence.knownSources), ...evidence.issues, ...await recipePhotoSourceIssues(content, db)];
   return issues.filter((issue, index) => issues.findIndex(other => other.field === issue.field && other.message === issue.message) === index);
 }

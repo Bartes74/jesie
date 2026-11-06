@@ -37,7 +37,7 @@ export function recipeReceiptCanBeRead(job: {
   providerRequestId: string | null; result: unknown;
 }) {
   return job.kind === 'recipe' && job.provider === 'openai' && Boolean(job.providerRequestId) && !job.result
-    && (job.status === 'uncertain' || job.status === 'failed' && job.errorCode === 'AI_RESULT_INVALID');
+    && (job.status === 'uncertain' || job.status === 'failed');
 }
 
 export function recipeGetRetryable(code: string) {

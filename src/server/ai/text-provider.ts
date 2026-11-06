@@ -131,6 +131,12 @@ async function retrieveResponse(api: OpenAI, requestId: string, options?: Respon
   }
 }
 
+/** Read an existing receipt for the administrator's local recovery workspace. */
+export async function retrieveRetainedRecipeResponse(requestId: string) {
+  if (!receiptId.test(requestId)) throw new ProviderError('AI_PROVIDER_RECEIPT_UNAVAILABLE', 'Brak poprawnego identyfikatora zachowanego wyniku.');
+  return retrieveResponse(client(), requestId, { include: ['web_search_call.action.sources'] });
+}
+
 export type RecipeIngredientResolution = {
   pending: boolean;
   dictionary: ReadonlyMap<string, import('@/lib/recipe-diet').RecipeDietId>;
@@ -138,29 +144,37 @@ export type RecipeIngredientResolution = {
   sources: import('@/lib/editorial-types').SourceReference[];
 };
 
+export type RecipeResponseCheckpoint = {
+  read(requestId: string): Promise<OpenAIResponse | null>;
+  retain(response: OpenAIResponse): Promise<void>;
+  proposal(): Promise<Record<string, unknown> | null>;
+};
+
 export async function pollText(model: string, requestId: string, input: EditorialContent, ancestorRequestIds: readonly string[] = [],
-  resolveIngredients?: (raw: unknown) => Promise<RecipeIngredientResolution>) {
+  resolveIngredients?: (raw: unknown) => Promise<RecipeIngredientResolution>, checkpoint?: RecipeResponseCheckpoint) {
   if (ancestorRequestIds.length > maximumTextRepairAttempts || new Set(ancestorRequestIds).size !== ancestorRequestIds.length
     || ancestorRequestIds.some(id => !receiptId.test(id) || id === requestId)) throw new ProviderError('AI_REPAIR_LINEAGE_INVALID', 'Historia naprawy wyniku jest niespójna.');
   const research = input.aiPhotography?.recipeResearchVersion === recipeResearchVersion;
-  const api = client();
   const retrieveOptions = research ? { include: ['web_search_call.action.sources' as const] } : undefined;
-  const response = await retrieveResponse(api, requestId, retrieveOptions);
+  const retrieve = async (id: string, chargedUsd?: string) => await checkpoint?.read(id) ?? retrieveResponse(client(), id, retrieveOptions, chargedUsd);
+  const response = await retrieve(requestId);
   const tokens = response.usage ? usageCost(model, response.usage) : null;
   const searches = response.output.filter(item => item.type === 'web_search_call').length;
   const cost = tokens ? { ...tokens, chargedUsd: new Decimal(tokens.chargedUsd).plus(new Decimal(searches).mul('.01')).toFixed(8) } : null;
   if (response.status === 'queued' || response.status === 'in_progress') return { done: false as const };
   if (response.status !== 'completed') throw new ProviderError('AI_GENERATION_FAILED', 'Usługa treści nie ukończyła poprawnego wyniku. Sprawdź wskazówki lub limit odpowiedzi.', false, cost?.chargedUsd);
+  if (response.id !== requestId) throw new ProviderError('AI_REPAIR_LINEAGE_INVALID', 'Odczytano inny wynik przepisu.', false, cost?.chargedUsd);
+  if (checkpoint) await checkpoint.retain(response);
   if (response.output.some(item => item.type === 'message' && item.content.some(part => part.type === 'refusal'))) throw new ProviderError('AI_GENERATION_REFUSED', 'Model nie przygotował przepisu dla tego briefu.', false, cost?.chargedUsd);
   // Read-only evidence from separately billed jobs. Their usage must not be charged a second time.
-  const ancestors = await Promise.all(ancestorRequestIds.map(id => retrieveResponse(api, id, retrieveOptions, cost?.chargedUsd)));
+  const ancestors = await Promise.all(ancestorRequestIds.map(id => retrieve(id, cost?.chargedUsd)));
   if (response.id !== requestId || ancestors.some((item, index) => item.id !== ancestorRequestIds[index] || item.status !== 'completed'
     || index > 0 && item.previous_response_id !== ancestorRequestIds[index - 1])
     || ancestors.length > 0 && response.previous_response_id !== ancestorRequestIds.at(-1)) {
     throw new ProviderError('AI_REPAIR_LINEAGE_INVALID', 'Nie potwierdzono powiązania naprawy z wcześniejszym wynikiem.', false, cost?.chargedUsd);
   }
   try {
-    const normalized = normalizeRecipeProposal(JSON.parse(response.output_text));
+    const normalized = await checkpoint?.proposal() ?? normalizeRecipeProposal(JSON.parse(response.output_text));
     if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) throw new ProviderError('AI_RESULT_INVALID', 'Wynik wymaga obiektu przepisu.', false, undefined,
       { issues: [{ field: 'recipe', message: 'Zwróć kompletny obiekt przepisu zgodny ze schematem.' }], repairable: true });
     const raw = normalized as Record<string, unknown>;

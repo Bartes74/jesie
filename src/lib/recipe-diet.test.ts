@@ -12,6 +12,17 @@ function recipe(...names: string[]): Pick<Recipe, 'ingredients'> {
   return { ingredients: names.map(name => ingredient(name)) };
 }
 
+test('panko and Polish haddock inflections are recognised without paid ingredient research', () => {
+  const panko = ingredient('panko', 'panierka panko');
+  const haddock = ingredient('cold-smoked haddock fillet, requiring cooking, skinless and boneless', 'filet z łupacza wędzonego na zimno, wymagający ugotowania, bez skóry i ości');
+  assert.deepEqual(unrecognisedRecipeIngredientNames([panko, haddock]), []);
+  assert.equal(inspectRecipeDiet({ ingredients: [panko, haddock] }).inferredDiet, 'meat');
+  for (const name of ['łupacz', 'łupacza', 'filet z łupacza']) assert.equal(getRecipeDiet(recipe(name)), 'meat');
+  assert.equal(getRecipeDiet(recipe('panko with milk')), 'vegetarian');
+  assert.equal(getRecipeDiet(recipe('panko with bacon')), 'meat');
+  assert.equal(inspectRecipeDiet(recipe('panko sauce')).inferredDiet, null);
+});
+
 test('three exclusive categories classify the base ingredients, without treating every nonmeat dish as vegan', () => {
   assert.deepEqual(recipeDiets.map(diet => diet.id), ['meat', 'vegetarian', 'vegan']);
   assert.equal(getRecipeDiet(recipe('potatoes', 'olive oil', 'salt')), 'vegan');
