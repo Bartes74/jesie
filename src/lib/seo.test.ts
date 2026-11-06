@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { recipes } from './recipes';
 import { toPublicRecipe } from './recipe-presentation';
-import { buildRecipeFeed, homeStructuredData, isProductionIndexable, pageMetadata, publicRobots, recipeMetadata, recipeSitemapEntries, recipeStructuredData, serializeJsonLd } from './seo';
+import { buildLlmsText, buildRecipeFeed, homeStructuredData, isProductionIndexable, pageMetadata, publicRobots, recipeMetadata, recipeSitemapEntries, recipeStructuredData, serializeJsonLd } from './seo';
 
 function publication() {
   return toPublicRecipe({ ...structuredClone(recipes[0]), publication: { datePublished: '2026-09-01T04:00:00.000Z', dateModified: '2026-10-10T12:30:00.000Z', author: 'jesie.pl' } });
@@ -48,10 +48,11 @@ test('Recipe schema uses base servings, expanded metric amounts and real publica
   const entity = data['@graph'].find(item => item['@type'] === 'Recipe')! as Record<string, unknown>;
   assert.equal(entity.recipeYield, '4 porcje');
   assert.equal(entity.totalTime, 'PT25M');
-  assert.equal(entity.cookTime, undefined);
+  // Prep is the remainder after cooking, so the pair matches the dependency-timed total.
+  assert.equal(entity.cookTime, 'PT10M');
   assert.equal(entity.datePublished, '2026-09-01T04:00:00.000Z');
   assert.equal(entity.dateModified, '2026-10-10T12:30:00.000Z');
-  assert(!('prepTime' in entity));
+  assert.equal(entity.prepTime, 'PT15M');
   assert(!('nutrition' in entity));
   assert(!('aggregateRating' in entity));
   assert(!('suitableForDiet' in entity));
@@ -118,7 +119,8 @@ test('sitemap includes recipe images and only existing language equivalents with
   recipe.slug.en = '';
   const polishOnly = recipeSitemapEntries([recipe]);
   assert.equal(polishOnly.length, 1);
-  assert.deepEqual(polishOnly[0].alternates?.languages, { pl: polishOnly[0].url });
+  assert.deepEqual(polishOnly[0].alternates?.languages, { pl: polishOnly[0].url, 'x-default': polishOnly[0].url });
+  assert.equal(entries[1].alternates?.languages?.['x-default'], entries[0].url);
   const legacy = toPublicRecipe(structuredClone(recipes[0]));
   assert(!('lastModified' in recipeSitemapEntries([legacy])[0]));
 });
@@ -155,4 +157,34 @@ test('RSS combines guides and recipes in publication order and retains stable id
   const updated = { ...recipe, publication: { ...recipe.publication!, dateModified: '2026-10-12T04:00:00Z' } };
   const updatedFeed = buildRecipeFeed([updated], 'pl', [guide]);
   assert(updatedFeed.indexOf('<title>Jak przeliczać porcje</title>') < updatedFeed.indexOf(`<title>${recipe.title.pl}</title>`));
+});
+
+test('x-default follows the Polish edition only when it exists', () => {
+  const both = pageMetadata({ locale: 'en', title: 'Guides', description: 'Help.', path: '/en/poradniki', languages: { pl: '/pl/poradniki', 'en-GB': '/en/poradniki' } });
+  assert.equal(both.alternates?.languages?.['x-default' as 'pl'], 'https://www.jesie.pl/pl/poradniki');
+  const englishOnly = pageMetadata({ locale: 'en', title: 'Guides', description: 'Help.', path: '/en/poradniki', languages: { 'en-GB': '/en/poradniki' } });
+  assert(!('x-default' in (englishOnly.alternates?.languages ?? {})));
+});
+
+test('Recipe schema omits a time split it cannot keep consistent and mirrors visible questions as FAQPage', () => {
+  const recipe = publication();
+  recipe.times = { ...recipe.times, cooking: 0 };
+  const entity = recipeStructuredData(recipe, 'pl')['@graph'].find(item => item['@type'] === 'Recipe')! as Record<string, unknown>;
+  assert(!('prepTime' in entity) && !('cookTime' in entity));
+  assert(!recipeStructuredData(recipe, 'pl')['@graph'].some(item => item['@type'] === 'FAQPage'));
+  const asked = { ...recipe, seo: { questions: [{ id: 'q', question: { pl: 'Czy można zamrozić?', en: '' }, answer: { pl: 'Tak, do miesiąca.', en: '' } }] } } as typeof recipe;
+  const faq = recipeStructuredData(asked, 'pl')['@graph'].find(item => item['@type'] === 'FAQPage') as Record<string, unknown> | undefined;
+  assert.deepEqual(faq?.mainEntity, [{ '@type': 'Question', name: 'Czy można zamrozić?', acceptedAnswer: { '@type': 'Answer', text: 'Tak, do miesiąca.' } }]);
+  assert(!recipeStructuredData(asked, 'en')['@graph'].some(item => item['@type'] === 'FAQPage'));
+});
+
+test('llms.txt lists only the given published content per edition with absolute links', () => {
+  const recipe = publication();
+  const guide = { path: '/pl/poradniki/porcje', title: 'Porcje [poradnik]', description: 'Jak\n przeliczać.' };
+  const text = buildLlmsText([recipe], { pl: { collections: [], guides: [guide] }, en: { collections: [], guides: [] } }, { pl: 'Opis\n redakcji.', en: 'Editorial summary.' });
+  assert(text.startsWith('# jesie.pl\n\n> Opis redakcji. / Editorial summary.\n'));
+  assert(text.includes(`- [${recipe.title.pl}](https://www.jesie.pl${'/pl/recipes/'}`));
+  assert(text.includes(`(https://www.jesie.pl/en/recipes/`));
+  assert(text.includes('- [Porcje poradnik](https://www.jesie.pl/pl/poradniki/porcje): Jak przeliczać.'));
+  assert(!text.includes('## Kolekcje'));
 });

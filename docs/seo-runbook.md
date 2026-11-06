@@ -21,13 +21,17 @@ Na Pinterest przeznacz trzy materiały tygodniowo. Kadr 1000×1500 jest generowa
 
 ## Odkrywanie i konfiguracja
 
-Publikacje mają dane JSON-LD Recipe zgodne z bazowymi porcjami i widoczną treścią. Składniki oraz instrukcje korzystają z tego samego przelicznika. Nie dodajemy fikcyjnych ocen, wartości odżywczych, osób ani publicznych oznaczeń AI.
+Publikacje mają dane JSON-LD Recipe zgodne z bazowymi porcjami i widoczną treścią. Składniki oraz instrukcje korzystają z tego samego przelicznika. `cookTime` to czas gotowania, a `prepTime` reszta pełnego czasu, więc para zawsze sumuje się do `totalTime`. Widoczne „Pytania przy gotowaniu” są powtórzone jako FAQPage. Rodzaju diety nie deklarujemy w `suitableForDiet`. Nie dodajemy fikcyjnych ocen, wartości odżywczych, osób ani publicznych oznaczeń AI. Hreflang i sitemap mają `x-default` wskazujący wersję polską.
 
 `/sitemap.xml` zawiera przepisy, dostępne tłumaczenia, zdjęcia, poradniki i gotowe kolekcje. Daty przepisów wynikają z niezmiennej historii publikacji. Kolekcje mają własną historię publikacji; sprawdzaj aktualne reguły sitemap w `src/app/sitemap.ts`, a nie daty należących do nich przepisów. `/pl/feed.xml` i `/en/feed.xml` udostępniają nowe materiały.
 
 `INDEXNOW_KEY` to publiczny klucz własności (8–128 liter/cyfr/myślników). `/indexnow-key.txt` udostępnia go do weryfikacji. Zgłoszenia są ponawiane z opóźnieniem, a niepowodzenie nie cofa publikacji. Przyjęcie 200/202 nie gwarantuje indeksowania.
 
-`GOOGLE_SITE_VERIFICATION` i `BING_SITE_VERIFICATION` uzupełniają metatagi własności. W panelach wyszukiwarek zgłoś `https://www.jesie.pl/sitemap.xml`. W Search Console pozostaw włączenie treści do funkcji generatywnych. Google Indexing API i `llms.txt` nie są częścią tego wdrożenia.
+`GOOGLE_SITE_VERIFICATION` i `BING_SITE_VERIFICATION` uzupełniają metatagi własności. W panelach wyszukiwarek zgłoś `https://www.jesie.pl/sitemap.xml`. W Search Console pozostaw włączenie treści do funkcji generatywnych. Google Indexing API nie jest częścią tego wdrożenia.
+
+`/llms.txt` (od 28.10.2026) to indeks dla modeli językowych: opublikowane przepisy PL/EN z kategorią, czasem i porcjami, gotowe kolekcje i poradniki, z adresami kanonicznymi. Powstaje z tego samego odczytu publikacji co sitemap, więc szkice, inspiracje i prywatne media do niego nie trafiają. Poza produkcją zwraca 404.
+
+Adresy dawnego bloga jesie.pl (2014–2017, np. `/przepisy/<kategoria>/<slug>/`) przekierowują 308 na katalog `/pl`, kontakt na „O serwisie”, a `/feed` na RSS. Żaden dawny wpis nie ma odpowiednika w obecnym katalogu. Lista sekcji: `src/lib/legacy-redirects.ts`, źródło: inwentarz Wayback Machine. Przy przywróceniu dawnego przepisu dodaj jawne przekierowanie na jego nowy adres przed regułą sekcji.
 
 Obrazy pochodne mają stabilne adresy, pięć rozmiarów i prywatny magazyn. Publiczny endpoint sprawdza aktualny opublikowany przepis. CDN może przechowywać już wydane obrazy do pięciu minut po wycofaniu. Szkice i nieopublikowane media nie otrzymują publicznego cache.
 
