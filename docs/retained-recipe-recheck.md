@@ -12,6 +12,8 @@ Dotychczasowy limit dwóch płatnych poprawek nie ogranicza lokalnych korekt adm
 
 W trakcie opracowania edytor udostępnia **Sprawdź i wznów ten etap**, a przy fotografiach **Sprawdź i wznów grafiki**. Działający proces jest budzony; po potwierdzonym zakończeniu jego wykonawcy kontynuacja korzysta z zapisanych zleceń. Nowe zadanie treści zapisuje tożsamość procesu od początku. Awaria samego uruchomienia zachowuje stan `queued`, który potwierdza brak wysłania do generatora; po dwuminutowej dzierżawie administrator może ponowić uruchomienie tego samego zadania. Stary wykonawca traci prawo do wysłania po zmianie generacji. Stan `submitting` lub niepotwierdzone przyjęcie płatnego żądania nie stanowią dowodu braku wysłania i nigdy nie uprawniają do ślepego ponawiania.
 
+Jeśli połączenie zerwało się podczas wysyłania i brakuje potwierdzenia, administrator może użyć **Uzupełnij potwierdzenie generatora**. Nowe wysłania i poprawki zawierają `metadata.jesie_job_id`; podany identyfikator jest odczytywany od dostawcy i przyjmowany wyłącznie po dokładnym dopasowaniu tej tożsamości i modelu. Nie wystarcza podobny tytuł, odpowiedź innego zadania ani deklaracja przeglądarki. Powiązanie trafia do niezmiennego audytu, a kontynuacja wyłącznie odczytuje przyjęte zlecenie. Starszych odpowiedzi bez oznaczenia nie wolno przypisywać na podstawie domysłu. Potwierdzony końcowy błąd lub odmowa generatora pozwalają zlecić nowe opracowanie, bez resetowania historii starego żądania.
+
 Testy: `npm run test:result-recovery:unit`, `npm run test:ingredient-verification` oraz `npm run test:recipe-checkpoints` na jawnie wskazanym, odizolowanym lokalnym PostgreSQL w `AI_TEST_DATABASE_URL`. Pakiet odtwarzania bazy obejmuje obie tabele i ochronę historii.
 
 ## Zwykły ponowny odczyt

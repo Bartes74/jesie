@@ -10,6 +10,7 @@ type View = {
   recipeId: string; expectedRevision: number; version: number; proposal: Record<string, unknown>; canEdit: boolean;
   reviewedIngredients: { ingredientId: string; diet: RecipeDietId }[]; reason: string; evidenceUrls: string[];
   issues: { field: string; message: string }[];
+  pendingReceipt?: boolean;
 };
 type Ingredient = { id: string; name: { pl: string; en: string } };
 
@@ -26,6 +27,7 @@ export function RecipeRecoveryEditor({ jobId }: { jobId: string }) {
   const [proposal, setProposal] = useState('');
   const [reviews, setReviews] = useState<Record<string, RecipeDietId | ''>>({});
   const [reason, setReason] = useState('');
+  const [requestId, setRequestId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -64,6 +66,19 @@ export function RecipeRecoveryEditor({ jobId }: { jobId: string }) {
     finally { setBusy(false); }
   };
 
+  const attachReceipt = async () => {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const response = await fetch(`/api/admin/ai/${encodeURIComponent(jobId)}/receipt`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: requestId.trim(), reason }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Nie potwierdzono powiązania zgłoszenia.');
+      setNotice(data.message || 'Potwierdzenie zostało zweryfikowane i zapisane. Wznowiono odczyt tego samego zlecenia. Wróć do przepisu, aby sprawdzić wynik.');
+    } catch (err) { setError(err instanceof Error ? err.message : 'Nie udało się sprawdzić potwierdzenia.'); }
+    finally { setBusy(false); }
+  };
+
   const ingredients = ingredientsIn(proposal);
   return <div className="recipe-recovery-editor">
     <Link href={`/admin/ai/${encodeURIComponent(jobId)}`} className="admin-text-link"><ArrowLeft size={16} />Wróć do zadania</Link>
@@ -72,7 +87,15 @@ export function RecipeRecoveryEditor({ jobId }: { jobId: string }) {
     {notice && <div className="admin-notice" role="status"><p>{notice}</p></div>}
     {!error && issues.length > 0 && <section className="recipe-recovery-issues"><h2>Przyczyna zatrzymania</h2><ul>{issues.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul></section>}
     {!view && !error && <p role="status"><LoaderCircle className="admin-spinner" size={18} />Wczytuję zachowaną odpowiedź…</p>}
-    {view && <form onSubmit={event => { event.preventDefault(); void save(); }}>
+    {view?.pendingReceipt && <section className="admin-editor-section"><h2>Ustal, czy generator przyjął zgłoszenie</h2><p>Jeżeli połączenie zerwało się przy wysyłaniu, sprawdź zgłoszenie w panelu dostawcy i podaj jego identyfikator. Odczytamy istniejące potwierdzenie i sprawdzimy, czy dostawca przypisał je dokładnie do tego zadania. Nie wysyłamy nowego generowania.</p>
+      {!notice && <form onSubmit={event => { event.preventDefault(); void attachReceipt(); }}><fieldset disabled={busy} style={{ border: 0, padding: 0 }}>
+        <label className="admin-field">Identyfikator odpowiedzi generatora<input required value={requestId} onChange={event => setRequestId(event.target.value)} placeholder="resp_…" maxLength={495} /></label>
+        <label className="admin-field">Jak potwierdzono zgłoszenie?<textarea required rows={3} minLength={10} maxLength={2000} value={reason} onChange={event => setReason(event.target.value)} /></label>
+        <button type="submit" className="admin-button" disabled={busy || !requestId.trim() || reason.trim().length < 10}>{busy && <LoaderCircle size={16} className="admin-spinner" />}Sprawdź potwierdzenie i wznów odczyt</button>
+      </fieldset></form>}
+      <Link className="admin-text-link" href={`/admin/recipes/${encodeURIComponent(view.recipeId)}`}>Wróć do przepisu</Link>
+    </section>}
+    {view && !view.pendingReceipt && <form onSubmit={event => { event.preventDefault(); void save(); }}>
       <fieldset disabled={busy || !view.canEdit} style={{ border: 0, padding: 0 }}>
         <section className="admin-editor-section"><h2>Sprawdź nierozpoznane składniki</h2><p>Jeżeli blokadą jest słownik lub skład produktu, sprawdź dokładną nazwę i skład. Wybierz kategorię tylko przy składniku, którego tożsamość potwierdzasz. Decyzja dotyczy tej nazwy w tym przepisie i zostanie zapisana z Twoim podpisem.</p>
           <div className="recipe-recovery-ingredients">{ingredients.map(item => <label className="admin-field" key={item.id}>{item.name.pl} · {item.name.en}<select value={reviews[item.id] ?? ''} onChange={event => setReviews({ ...reviews, [item.id]: event.target.value as RecipeDietId | '' })}><option value="">Bez ręcznego rozstrzygnięcia</option>{recipeDiets.map(diet => <option value={diet.id} key={diet.id}>{diet.label.pl}</option>)}</select></label>)}</div>

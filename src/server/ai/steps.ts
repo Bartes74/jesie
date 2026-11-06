@@ -69,8 +69,8 @@ export async function submitGeneration(id: string) {
     const recovery = job.kind === 'recipe' ? await recipeRecoverySubmission(id, { forSubmission: true }) : null;
     const requestId = job.kind === 'recipe'
       ? recovery?.repair
-        ? await submitTextRepair(job.model, job.input, job.brief, recovery.repair.previousResponseId, recovery.repair.issues, beforeSubmit, `recipe-job-${job.id}`)
-        : await submitText(job.model, job.input, job.brief, beforeSubmit)
+        ? await submitTextRepair(job.model, job.input, job.brief, recovery.repair.previousResponseId, recovery.repair.issues, beforeSubmit, `recipe-job-${job.id}`, job.id)
+        : await submitText(job.model, job.input, job.brief, beforeSubmit, job.id)
       : await submitImage(job.model, job.kind, job.input, job.targetId, job.brief, beforeSubmit);
     await attachProviderRequest(id, requestId);
     return true;

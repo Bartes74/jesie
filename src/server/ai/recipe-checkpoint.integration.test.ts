@@ -16,6 +16,7 @@ import { beginRecipeResultRecovery } from './recipe-recovery';
 import { resolveRecipeIngredients } from './recipe-ingredient-resolution';
 import { pollText, usageCost } from './text-provider';
 import { getRecipeVerifiedAliases } from './recipe-ingredient-dictionary';
+import { attachRecipeReceipt } from './recipe-receipt-recovery';
 
 const schema = `checkpoint_test_${randomUUID().replaceAll('-', '')}`;
 const actor: EditorialActor = { id: 'owner', name: 'Owner', email: 'owner@example.invalid', role: 'owner' };
@@ -124,4 +125,26 @@ test('a review is confined to exact names and cannot relabel clear animal eviden
   const cheeseReview = reviewedIngredientDictionary([cheese], [{ ingredientId: 'food', name: cheese.name, diet: 'vegan' }]);
   assert.equal(inspectRecipeDiet({ ingredients: [cheese] }, cheeseReview).inferredDiet, 'vegetarian');
   assert.equal(reviewedIngredientDictionary([{ ...ingredient, name: { pl: 'Inna nazwa', en: 'Different name' } }], [{ ingredientId: 'food', name: ingredient.name, diet: 'vegan' }]).size, 0);
+});
+
+test('an administrator can reconcile an uncertain submission only using provider-owned job identity, without a second POST', async () => {
+  const f = await fixture(), id = randomUUID(), requestId = `resp_${id.replaceAll('-', '')}`;
+  await pool.query("INSERT INTO ai_job(id,recipe_id,base_revision,kind,status,provider,model,brief,request_key,input_hash,input,created_by,created_by_name,reserved_usd,error_code) VALUES($1,$2,1,'recipe','uncertain','openai','gpt-6.1-sol','Fixture',$3,$4,$5,'owner','Owner',0,'AI_SUBMISSION_UNCERTAIN')",
+    [id, f.draft.id, randomUUID(), createHash('sha256').update(id).digest('hex'), f.input]);
+  const response = { ...f.response, id: requestId, model: 'gpt-6.1-sol', metadata: { jesie_job_id: id } };
+  const input = { requestId, reason: 'Potwierdzono identyfikator w panelu dostawcy.' };
+  await assert.rejects(attachRecipeReceipt(id, input, actor, async () => ({ ...response, metadata: { jesie_job_id: 'another-job' } })), /nie potwierdził/);
+  await assert.rejects(attachRecipeReceipt(id, input, actor, async () => ({ ...response, model: 'gpt-6-astra' })), /nie potwierdził/);
+  assert.equal((await getJobForExecution(id)).providerRequestId, null);
+  await pool.query("UPDATE auth_user SET disabled=true WHERE id='owner'");
+  await assert.rejects(attachRecipeReceipt(id, input, actor, async () => response));
+  await pool.query("UPDATE auth_user SET disabled=false WHERE id='owner'");
+  await attachRecipeReceipt(id, input, actor, async () => response);
+  await attachRecipeReceipt(id, input, actor, async () => response);
+  const job = await getJobForExecution(id);
+  assert.equal(job.providerRequestId, requestId); assert.equal(job.status, 'generating'); assert.equal(job.chargedUsd, null);
+  assert.equal((await getRecipeResponse(requestId))?.id, requestId);
+  assert.equal((await pool.query("SELECT count(*)::int n FROM editorial_audit WHERE recipe_id=$1 AND action LIKE 'recover_ai_receipt:%'", [f.draft.id])).rows[0].n, 1);
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_cost_ledger WHERE job_id=$1', [id])).rows[0].n, 0);
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_job')).rows[0].n, 2);
 });

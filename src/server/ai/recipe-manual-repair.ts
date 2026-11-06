@@ -41,6 +41,10 @@ async function responseFor(jobId: string) {
 
 export async function recipeManualRepairView(id: string) {
   const job = await getJobForExecution(id);
+  if (job.kind === 'recipe' && !job.providerRequestId) return {
+    jobId: job.id, recipeId: job.recipeId, expectedRevision: job.baseRevision, version: 0, proposal: {},
+    reviewedIngredients: [], reason: '', evidenceUrls: [], issues: [], output: [], canEdit: false, pendingReceipt: true,
+  };
   const [response, repair, state] = await Promise.all([responseFor(id), latestManualRecipeRepair(id), recipeRecoveryReadableState(id)]);
   let proposal: unknown;
   try { proposal = normalizeRecipeProposal(JSON.parse(response.output_text)); }

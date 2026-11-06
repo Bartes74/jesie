@@ -13,7 +13,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const { id } = await context.params;
     const view = await recipeManualRepairView(id);
     return adminResponse({ jobId: view.jobId, recipeId: view.recipeId, expectedRevision: view.expectedRevision, version: view.version,
-      proposal: view.proposal, reviewedIngredients: view.reviewedIngredients, reason: view.reason, evidenceUrls: view.evidenceUrls, canEdit: view.canEdit, issues: view.issues });
+      proposal: view.proposal, reviewedIngredients: view.reviewedIngredients, reason: view.reason, evidenceUrls: view.evidenceUrls, canEdit: view.canEdit, issues: view.issues,
+      pendingReceipt: 'pendingReceipt' in view && view.pendingReceipt });
   } catch (error) { return aiFailure(error); }
 }
 

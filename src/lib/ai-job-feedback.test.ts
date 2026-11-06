@@ -17,6 +17,8 @@ test('an unconfirmed workflow dispatch offers continuation while a proven unsubm
   assert.equal(canStartNewRecipeText(waiting, 3), false);
   assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', costBasis: 'usage', chargedUsd: '0.00000000' }, 3), true);
   assert.equal(canStartNewRecipeText({ ...waiting, status: 'uncertain', chargedUsd: null }, 3), false);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', errorCode: 'AI_GENERATION_FAILED', providerRequestId: 'resp_terminal' }, 3), true);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', errorCode: 'AI_RESULT_INVALID', providerRequestId: 'resp_invalid' }, 3), false);
 });
 
 test('a historical failed mask directs to the recovered ready or applied source photograph', () => {

@@ -62,7 +62,8 @@ function photoJobFeedback(job: AiJob): AiJobFeedback | null {
 /** A changed brief starts a new lineage; an unchanged invalid result uses bounded recovery. */
 export function canStartNewRecipeText(job: AiJob | null, revision: number): boolean {
   const confirmedUnsent = job?.status === 'failed' && !job.providerRequestId && job.costBasis === 'usage' && job.chargedUsd !== null && Number(job.chargedUsd) === 0;
-  return !job || job.status === 'cancelled' || confirmedUnsent || job.status === 'failed' && (job.baseRevision !== revision || !job.recovery && !/RESULT_INVALID|RESEARCH_SOURCE_INVALID/.test(job.errorCode ?? ''));
+  const terminalProviderFailure = job?.status === 'failed' && ['AI_GENERATION_FAILED', 'AI_GENERATION_REFUSED'].includes(job.errorCode ?? '');
+  return !job || job.status === 'cancelled' || confirmedUnsent || terminalProviderFailure || job.status === 'failed' && (job.baseRevision !== revision || !job.recovery && !/RESULT_INVALID|RESEARCH_SOURCE_INVALID/.test(job.errorCode ?? ''));
 }
 
 export function recipeIssueLabel(field: string): string {

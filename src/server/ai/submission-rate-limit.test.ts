@@ -13,6 +13,26 @@ const limited = () => new ConfirmedRateLimitError(null);
 const input = (): EditorialContent => ({ recipe: structuredClone(recipes[0]), originalText: 'Fixture', author: 'Test', sources: [], photos: { ingredients: {}, steps: {} } });
 const matches = (code: string, uncertain = false) => (error: unknown) => error instanceof ProviderError && error.code === code && error.uncertain === uncertain;
 
+test('initial and repair requests carry the exact durable job identity for receipt reconciliation', async t => {
+  const original = process.env.OPENAI_API_KEY; process.env.OPENAI_API_KEY = 'test-unused-correlation';
+  const jobId = 'correlation-fixture-job-123456';
+  const bodies: Record<string, unknown>[] = [];
+  t.mock.method(globalThis, 'fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
+    const request = url instanceof Request ? url : new Request(url, init);
+    assert.equal(request.method, 'POST');
+    assert.equal(request.headers.get('idempotency-key'), `recipe-job-${jobId}`);
+    const body = await request.json() as Record<string, unknown>; bodies.push(body);
+    assert.equal((body.metadata as Record<string, string>).jesie_job_id, jobId);
+    return Response.json({ id: 'resp_correlation', object: 'response', status: 'queued', output: [] });
+  });
+  try {
+    await submitText('gpt-6-astra', input(), 'Fixture', undefined, jobId);
+    await submitTextRepair('gpt-6-astra', input(), 'Fixture', 'resp_parent', [{ field: 'title', message: 'Complete title.' }], undefined, `recipe-job-${jobId}`, jobId);
+    assert.equal(bodies.length, 2);
+    assert.equal((bodies[1].metadata as Record<string, string>).jesie_repair_parent, 'resp_parent');
+  } finally { if (original === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = original; }
+});
+
 test('only explicit HTTP 429 rate-limit codes grant a retry, never quota, billing, unknown or other HTTP errors', () => {
   for (const code of ['rate_limit_exceeded', 'rate_limited', 'slow_down', 'rate_limit_error']) assert.equal(isConfirmedRateLimit(429, code), true);
   assert.equal(isConfirmedRateLimit(429, null, 'rate_limit_error'), true);

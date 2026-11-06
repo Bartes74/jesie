@@ -92,13 +92,14 @@ export function usageCost(model: string, usage: { input_tokens: number; output_t
   return { chargedUsd: cost.toFixed(8, Decimal.ROUND_CEIL), costBasis: 'usage' as const, usage: { inputTokens: usage.input_tokens, outputTokens: usage.output_tokens } };
 }
 
-export async function submitText(model: string, input: EditorialContent, brief: string, beforeSubmit?: () => Promise<void>) {
-  const request = responseRequest(model, input, brief);
-  return submitRequest(request, beforeSubmit);
+export async function submitText(model: string, input: EditorialContent, brief: string, beforeSubmit?: () => Promise<void>, jobId?: string) {
+  const request = { ...responseRequest(model, input, brief), ...(jobId ? { metadata: { jesie_job_id: jobId } } : {}) };
+  return submitRequest(request, beforeSubmit, jobId ? `recipe-job-${jobId}` : undefined);
 }
 
-export async function submitTextRepair(model: string, input: EditorialContent, brief: string, previousResponseId: string, issues: readonly ProviderIssue[], beforeSubmit?: () => Promise<void>, idempotencyKey?: string) {
+export async function submitTextRepair(model: string, input: EditorialContent, brief: string, previousResponseId: string, issues: readonly ProviderIssue[], beforeSubmit?: () => Promise<void>, idempotencyKey?: string, jobId?: string) {
   const request = responseRepairRequest(model, input, brief, previousResponseId, issues);
+  if (jobId) Object.assign(request.metadata, { jesie_job_id: jobId });
   if (idempotencyKey !== undefined && !/^[A-Za-z0-9_-]{16,100}$/.test(idempotencyKey)) throw new ProviderError('AI_REPAIR_INPUT_INVALID', 'Nieprawidłowy identyfikator próby naprawy.');
   return submitRequest(request, beforeSubmit, idempotencyKey);
 }
