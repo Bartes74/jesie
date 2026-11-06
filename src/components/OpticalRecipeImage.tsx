@@ -3,7 +3,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import type { MediaDeliveryWidth } from '@/lib/media-delivery';
 import { heroOpticalLayout } from '@/lib/hero-optical-layout';
-import { heroGroundShadowLayout } from '@/lib/hero-ground-shadow';
 import { measureRecipeImageFootprint } from '@/lib/recipe-image-footprint';
 import { MediaImage } from './MediaImage';
 
@@ -33,7 +32,7 @@ export function OpticalRecipeImage({ src, alt, sizes, maximumWidth = 1600, class
       image.style.removeProperty('scale');
       image.style.removeProperty('translate');
       image.style.removeProperty('transform-origin');
-      for (const property of ['visible', 'x', 'y', 'width', 'height']) frame.style.removeProperty(`--dish-shadow-${property}`);
+      delete frame.dataset.cutout;
     };
     const resize = () => {
       if (!footprint) { reset(); return; }
@@ -47,14 +46,8 @@ export function OpticalRecipeImage({ src, alt, sizes, maximumWidth = 1600, class
       image.style.transformOrigin = `${layout.originX}px ${layout.originY}px`;
       image.style.translate = `${layout.translateX}px ${layout.translateY}px`;
       image.style.scale = String(layout.scale);
-      const shadow = heroGroundShadowLayout(geometry, layout);
-      if (shadow) {
-        frame.style.setProperty('--dish-shadow-x', `${shadow.centerX}px`);
-        frame.style.setProperty('--dish-shadow-y', `${shadow.centerY}px`);
-        frame.style.setProperty('--dish-shadow-width', `${shadow.width}px`);
-        frame.style.setProperty('--dish-shadow-height', `${shadow.height}px`);
-        frame.style.setProperty('--dish-shadow-visible', '1');
-      } else frame.style.removeProperty('--dish-shadow-visible');
+      // Transparent cutouts receive a drop shadow traced from their own alpha contour.
+      frame.dataset.cutout = '';
     };
     const measure = () => {
       footprint = null;
@@ -85,7 +78,7 @@ export function OpticalRecipeImage({ src, alt, sizes, maximumWidth = 1600, class
     return () => { image.removeEventListener('load', measure); image.removeEventListener('error', onError); observer.disconnect(); reset(); };
   }, [src, surface]);
 
-  return <div ref={frameRef} className="recipe-dish-frame" style={{ position: 'absolute', inset: 0, overflow: 'clip' }}>
+  return <div ref={frameRef} className="recipe-dish-frame" style={{ position: 'absolute', inset: 0, overflowX: 'clip' }}>
     <MediaImage ref={imageRef} src={src} alt={alt} fill loading={loading} fetchPriority={fetchPriority} maximumWidth={maximumWidth}
       sizes={sizes} className={className} style={style} />
   </div>;

@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
-import { compactPhoto, losslessPhoto } from './compact-photo';
+import { compactPhoto, deliveryQuality, losslessPhoto, minimumDeliverySsim } from './compact-photo';
 
 test('the editing archive preserves full resolution, exact alpha and color beneath transparent pixels', async () => {
   const width = 40, height = 30;
@@ -50,4 +51,40 @@ test('the delivery photo is compressed while the full resolution editing source 
   assert.equal(delivery.length, pixels.length);
   const meanError = pixels.reduce((sum, value, index) => sum + Math.abs(value - delivery[index]), 0) / pixels.length;
   assert(meanError < 20, 'Delivery compression retains the photograph within a reasonable RGB error.');
+});
+
+test('cutout and step delivery sources are lossy but keep exact alpha and opacity', async () => {
+  const original = await sharp(readFileSync(new URL('../../../public/images/steps-lemon-pasta.webp', import.meta.url))).png().toBuffer();
+  const { width, height } = await sharp(original).metadata() as { width: number; height: number };
+  const cutoutPixels = await sharp(original).ensureAlpha().raw().toBuffer();
+  for (let pixel = 0; pixel < width * height; pixel++) {
+    const x = pixel % width, y = Math.floor(pixel / width);
+    const distance = Math.hypot((x - width / 2) / (width * 0.4), (y - height / 2) / (height * 0.4));
+    cutoutPixels[pixel * 4 + 3] = distance < 0.9 ? 255 : distance < 1 ? Math.round((1 - distance) * 2550) : 0;
+  }
+  const cutout = await sharp(cutoutPixels, { raw: { width, height, channels: 4 } }).png().toBuffer();
+  const result = await compactPhoto(original, cutout, true);
+  assert.equal(result.shared, false);
+  assert(result.web.length * 2 < (await losslessPhoto(cutout)).length, 'A photographic delivery source is far smaller than a lossless copy.');
+  const alpha = (bytes: Buffer) => sharp(bytes).ensureAlpha().extractChannel(3).raw().toBuffer();
+  assert.deepEqual(await alpha(result.web), await alpha(cutout), 'The silhouette used for shadows and footprints is unchanged.');
+  const step = await compactPhoto(original, original, false);
+  assert.equal((await sharp(step.web).stats()).isOpaque, true, 'An opaque step photo gains no transparency.');
+  const quality = await deliveryQuality(cutout, result.web);
+  assert(quality.sameSize && quality.alphaExact && quality.ssim >= minimumDeliverySsim, 'The delivery source passes the recompression quality gate.');
+});
+
+test('the quality gate rejects visibly degraded photos and changed alpha', async () => {
+  const photo = readFileSync(new URL('../../../public/images/steps-lemon-pasta.webp', import.meta.url));
+  const degraded = await sharp(photo).webp({ quality: 20 }).toBuffer();
+  assert((await deliveryQuality(photo, degraded)).ssim < minimumDeliverySsim);
+  const faded = await sharp(photo).ensureAlpha(0.5).png().toBuffer();
+  assert.equal((await deliveryQuality(photo, faded)).alphaExact, false);
+});
+
+test('flat artwork keeps the smaller exact file instead of a larger lossy one', async () => {
+  const flat = await sharp({ create: { width: 320, height: 200, channels: 4, background: '#f4efe6ff' } }).png().toBuffer();
+  const shape = await sharp(flat).composite([{ input: await sharp({ create: { width: 100, height: 80, channels: 4, background: '#00000000' } }).png().toBuffer(), left: 0, top: 0 }]).png().toBuffer();
+  const result = await compactPhoto(flat, shape, true);
+  assert.deepEqual(result.web, await losslessPhoto(shape));
 });
