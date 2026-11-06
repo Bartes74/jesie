@@ -14,6 +14,7 @@ import { AiError } from './errors';
 import { TrendError } from '@/server/trends/store';
 import { admitManualHeroCutout } from './manual-hero-recovery';
 import { resolveRecipeIngredients } from './recipe-ingredient-resolution';
+import { recipeResponseCheckpoint } from './recipe-checkpoint';
 
 export async function prepareManualHeroCutout(id: string, workflowRunId: string) {
   'use step';
@@ -68,8 +69,8 @@ export async function submitGeneration(id: string) {
     const recovery = job.kind === 'recipe' ? await recipeRecoverySubmission(id, { forSubmission: true }) : null;
     const requestId = job.kind === 'recipe'
       ? recovery?.repair
-        ? await submitTextRepair(job.model, job.input, job.brief, recovery.repair.previousResponseId, recovery.repair.issues, beforeSubmit, `recipe-job-${job.id}`)
-        : await submitText(job.model, job.input, job.brief, beforeSubmit)
+        ? await submitTextRepair(job.model, job.input, job.brief, recovery.repair.previousResponseId, recovery.repair.issues, beforeSubmit, `recipe-job-${job.id}`, job.id)
+        : await submitText(job.model, job.input, job.brief, beforeSubmit, job.id)
       : await submitImage(job.model, job.kind, job.input, job.targetId, job.brief, beforeSubmit);
     await attachProviderRequest(id, requestId);
     return true;
@@ -99,7 +100,7 @@ export async function pollGeneration(id: string, existingRecipeOnly = false) {
     if (job.kind === 'recipe') {
       const recovery = await recipeRecoverySubmission(id);
       const result = await pollText(job.model, job.providerRequestId, job.input, recovery.ancestorRequestIds,
-        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }));
+        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }), recipeResponseCheckpoint(job.id));
       if (!result.done) return false;
       await finishRecipe(id, result.content, result.cost, result.notes, { verifiedResearchSources: true });
     } else {

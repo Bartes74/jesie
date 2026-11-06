@@ -100,20 +100,20 @@ export async function beginRecipeResultRecovery(id: string, actor: EditorialActo
     // receipt again. Local validation may have been corrected since this result
     // failed; admitRecipeRepair still prevents a third repair after this read.
     const currentlyReading = job.kind === 'recipe' && job.provider === 'openai' && job.status === 'generating' && job.providerRequestId && !job.result;
-    const unsentChild = Boolean(entry && entry.attempt > 0 && job.status === 'queued' && !job.providerRequestId && !job.result);
-    if (!recipeReceiptCanBeRead(job) && !currentlyReading && !unsentChild || job.status === 'failed' && !job.providerFinishedAt)
+    const unsent = job.status === 'queued' && !job.providerRequestId && !job.result;
+    if (!recipeReceiptCanBeRead(job) && !currentlyReading && !unsent || job.status === 'failed' && !job.providerFinishedAt)
       throw new AiError(409, 'RECIPE_RECOVERY_RECEIPT_REQUIRED', 'Naprawa wymaga zapisanego identyfikatora istniejącego wyniku. Nie wysłano nowej generacji.');
     await noOtherPending(tx, job.recipeId, job.id);
     if (entry?.workflowRunId) {
       if (!evidence || evidence.status !== 'terminated' || evidence.generation !== entry.generation || evidence.workflowRunId !== entry.workflowRunId)
         return { job: jobDto(job), generation: entry.generation, dispatch: false };
-    } else if (entry?.dispatchClaimedAt && new Date().getTime() - entry.dispatchClaimedAt.getTime() < 120_000) {
+    } else if (entry?.dispatchClaimedAt && ['queued', 'generating'].includes(job.status) && new Date().getTime() - entry.dispatchClaimedAt.getTime() < 120_000) {
       return { job: jobDto(job), generation: entry.generation, dispatch: false };
     }
     const generation = entry ? entry.generation + 1 : 1;
     if (entry) await tx.update(aiRecipeRecoveries).set({ generation, workflowRunId: null, dispatchClaimedAt: new Date(), blockedCode: null, blockedMessage: null, updatedAt: new Date() }).where(eq(aiRecipeRecoveries.jobId, job.id));
     else await tx.insert(aiRecipeRecoveries).values({ jobId: job.id, rootJobId: job.id, attempt: 0, dispatchClaimedAt: new Date() });
-    const [updated] = await tx.update(aiJobs).set({ status: unsentChild ? 'queued' : 'generating', errorCode: null, errorMessage: null, updatedAt: new Date() }).where(eq(aiJobs.id, job.id)).returning();
+    const [updated] = await tx.update(aiJobs).set({ status: unsent ? 'queued' : 'generating', errorCode: null, errorMessage: null, updatedAt: new Date() }).where(eq(aiJobs.id, job.id)).returning();
     return { job: jobDto(updated), generation, dispatch: true };
   });
 }
@@ -134,6 +134,8 @@ export async function markRecipeRecoveryDispatchUnconfirmed(id: string, generati
     if (!entry || entry.generation !== generation || entry.workflowRunId) return;
     const message = 'Nie potwierdzono uruchomienia odczytu. Zachowano to samo zlecenie; ponów sprawdzenie za dwie minuty.';
     await tx.update(aiRecipeRecoveries).set({ blockedCode: 'AI_RECOVERY_DISPATCH_UNCONFIRMED', blockedMessage: message, updatedAt: new Date() }).where(eq(aiRecipeRecoveries.jobId, id));
+    await tx.update(aiJobs).set({ errorCode: 'AI_RECOVERY_DISPATCH_UNCONFIRMED', errorMessage: message, updatedAt: new Date() })
+      .where(and(eq(aiJobs.id, id), isNull(aiJobs.result), eq(aiJobs.status, 'queued'), isNull(aiJobs.providerRequestId)));
     await tx.update(aiJobs).set({ status: 'uncertain', errorCode: 'AI_RECOVERY_DISPATCH_UNCONFIRMED', errorMessage: message, updatedAt: new Date() })
       .where(and(eq(aiJobs.id, id), isNull(aiJobs.result), eq(aiJobs.status, 'generating')));
   });

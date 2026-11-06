@@ -9,6 +9,18 @@ import { readyPreparationAction } from './preparation-client';
 
 const job = { id: 'root', recipeId: 'recipe', kind: 'recipe', status: 'failed', baseRevision: 3, errorCode: 'AI_RESULT_INVALID', errorMessage: 'Wynik wymaga poprawy.', providerRequestId: 'receipt' } as AiJob;
 
+test('an unconfirmed workflow dispatch offers continuation while a proven unsubmitted failure permits a new attempt', () => {
+  const waiting: AiJob = { ...job, status: 'queued', providerRequestId: null, errorCode: 'AI_RECOVERY_DISPATCH_UNCONFIRMED',
+    recovery: { status: 'blocked', code: 'AI_RECOVERY_DISPATCH_UNCONFIRMED', canResume: true, attempt: 0, maxAttempts: 2 } };
+  assert.equal(jobHasOngoingWork(waiting), false);
+  assert.equal(aiJobFeedback(waiting, 3)?.primary?.action, 'recover');
+  assert.equal(canStartNewRecipeText(waiting, 3), false);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', costBasis: 'usage', chargedUsd: '0.00000000' }, 3), true);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'uncertain', chargedUsd: null }, 3), false);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', errorCode: 'AI_GENERATION_FAILED', providerRequestId: 'resp_terminal' }, 3), true);
+  assert.equal(canStartNewRecipeText({ ...waiting, status: 'failed', errorCode: 'AI_RESULT_INVALID', providerRequestId: 'resp_invalid' }, 3), false);
+});
+
 test('a historical failed mask directs to the recovered ready or applied source photograph', () => {
   for (const status of ['ready', 'applied'] as const) {
     const mask: AiJob = { ...job, kind: 'hero', model: 'fal-ai/sam-3/image', errorCode: 'AI_MASK_NOT_FOUND',

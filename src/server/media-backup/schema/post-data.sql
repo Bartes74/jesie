@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict vRYBeW4AeLSIA6VtcqXiifaqZKJgh7gpHSotGiIcFnw1d2LxEzFUOeCjg17cxgU
+\restrict JU4ysvxbKcOVxi2ZUlrCs94lG1fbIde451hbbbn71O5vrFQ7PKINogmkJ2rqBH4
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -134,6 +134,14 @@ ALTER TABLE ONLY public.ai_photo_batch
 
 
 --
+-- Name: ai_recipe_manual_repair ai_recipe_manual_repair_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_recipe_manual_repair
+    ADD CONSTRAINT ai_recipe_manual_repair_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ai_recipe_recovery ai_recipe_recovery_parent_job_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -155,6 +163,14 @@ ALTER TABLE ONLY public.ai_recipe_recovery
 
 ALTER TABLE ONLY public.ai_recipe_recovery
     ADD CONSTRAINT ai_recipe_recovery_root_job_id_attempt_key UNIQUE (root_job_id, attempt);
+
+
+--
+-- Name: ai_recipe_response ai_recipe_response_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_recipe_response
+    ADD CONSTRAINT ai_recipe_response_pkey PRIMARY KEY (job_id);
 
 
 --
@@ -707,10 +723,31 @@ CREATE INDEX ai_photo_batch_recipe_created_idx ON public.ai_photo_batch USING bt
 
 
 --
+-- Name: ai_recipe_manual_repair_recipe_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_recipe_manual_repair_recipe_idx ON public.ai_recipe_manual_repair USING btree (recipe_id);
+
+
+--
+-- Name: ai_recipe_manual_repair_version_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ai_recipe_manual_repair_version_unique ON public.ai_recipe_manual_repair USING btree (job_id, version);
+
+
+--
 -- Name: ai_recipe_recovery_root_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX ai_recipe_recovery_root_idx ON public.ai_recipe_recovery USING btree (root_job_id, attempt DESC);
+
+
+--
+-- Name: ai_recipe_response_request_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ai_recipe_response_request_unique ON public.ai_recipe_response USING btree (request_id);
 
 
 --
@@ -980,10 +1017,38 @@ CREATE TRIGGER ai_photo_batch_capture_immutable BEFORE UPDATE ON public.ai_photo
 
 
 --
+-- Name: ai_recipe_manual_repair ai_recipe_manual_repair_identity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ai_recipe_manual_repair_identity BEFORE INSERT ON public.ai_recipe_manual_repair FOR EACH ROW EXECUTE FUNCTION public.require_recipe_checkpoint_identity();
+
+
+--
+-- Name: ai_recipe_manual_repair ai_recipe_manual_repair_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ai_recipe_manual_repair_immutable BEFORE DELETE OR UPDATE ON public.ai_recipe_manual_repair FOR EACH ROW EXECUTE FUNCTION public.protect_recipe_checkpoint();
+
+
+--
 -- Name: ai_recipe_recovery ai_recipe_recovery_identity_immutable; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER ai_recipe_recovery_identity_immutable BEFORE DELETE OR UPDATE ON public.ai_recipe_recovery FOR EACH ROW EXECUTE FUNCTION public.protect_recipe_recovery_identity();
+
+
+--
+-- Name: ai_recipe_response ai_recipe_response_identity; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ai_recipe_response_identity BEFORE INSERT ON public.ai_recipe_response FOR EACH ROW EXECUTE FUNCTION public.require_recipe_checkpoint_identity();
+
+
+--
+-- Name: ai_recipe_response ai_recipe_response_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ai_recipe_response_immutable BEFORE DELETE OR UPDATE ON public.ai_recipe_response FOR EACH ROW EXECUTE FUNCTION public.protect_recipe_checkpoint();
 
 
 --
@@ -1235,6 +1300,22 @@ ALTER TABLE ONLY public.ai_photo_batch
 
 
 --
+-- Name: ai_recipe_manual_repair ai_recipe_manual_repair_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_recipe_manual_repair
+    ADD CONSTRAINT ai_recipe_manual_repair_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.ai_job(id);
+
+
+--
+-- Name: ai_recipe_manual_repair ai_recipe_manual_repair_recipe_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_recipe_manual_repair
+    ADD CONSTRAINT ai_recipe_manual_repair_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES public.editorial_recipe(id);
+
+
+--
 -- Name: ai_recipe_recovery ai_recipe_recovery_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1256,6 +1337,14 @@ ALTER TABLE ONLY public.ai_recipe_recovery
 
 ALTER TABLE ONLY public.ai_recipe_recovery
     ADD CONSTRAINT ai_recipe_recovery_root_job_id_fkey FOREIGN KEY (root_job_id) REFERENCES public.ai_job(id);
+
+
+--
+-- Name: ai_recipe_response ai_recipe_response_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_recipe_response
+    ADD CONSTRAINT ai_recipe_response_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.ai_job(id);
 
 
 --
@@ -1549,10 +1638,22 @@ ALTER TABLE public.ai_budget_settings_audit ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_ingredient_verification ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: ai_recipe_manual_repair; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.ai_recipe_manual_repair ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: ai_recipe_recovery; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.ai_recipe_recovery ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: ai_recipe_response; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.ai_recipe_response ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: ai_verified_ingredient_alias; Type: ROW SECURITY; Schema: public; Owner: -
@@ -1672,5 +1773,5 @@ ALTER TABLE public.trend_setting_audit ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vRYBeW4AeLSIA6VtcqXiifaqZKJgh7gpHSotGiIcFnw1d2LxEzFUOeCjg17cxgU
+\unrestrict JU4ysvxbKcOVxi2ZUlrCs94lG1fbIde451hbbbn71O5vrFQ7PKINogmkJ2rqBH4
 

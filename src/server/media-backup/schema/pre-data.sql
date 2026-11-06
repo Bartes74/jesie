@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
+\restrict 3J0AdVKP4vwsgmoaK2ymyScL3UnjvxCFT7KWu7Hpo0PYwcRL3adTfIWFHruUtY3
 
 -- Dumped from database version 18.6 (Homebrew)
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -312,6 +312,18 @@ END $$;
 
 
 --
+-- Name: protect_recipe_checkpoint(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.protect_recipe_checkpoint() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'RECIPE_CHECKPOINT_IMMUTABLE';
+END $$;
+
+
+--
 -- Name: protect_recipe_recovery_identity(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -464,6 +476,25 @@ BEGIN
   IF NEW.created_by<>'jesie-trend-worker' THEN
     INSERT INTO trend_automation_takeover(recipe_id,reason,actor_id)
     VALUES(NEW.recipe_id,'studio',NEW.created_by) ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: require_recipe_checkpoint_identity(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.require_recipe_checkpoint_identity() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_TABLE_NAME='ai_recipe_response' THEN
+    IF NOT EXISTS(SELECT 1 FROM ai_job WHERE id=NEW.job_id AND kind='recipe' AND provider='openai' AND provider_request_id=NEW.request_id) THEN
+      RAISE EXCEPTION 'RECIPE_CHECKPOINT_RECEIPT_MISMATCH';
+    END IF;
+  ELSIF NOT EXISTS(SELECT 1 FROM ai_job WHERE id=NEW.job_id AND kind='recipe' AND recipe_id=NEW.recipe_id) THEN
+    RAISE EXCEPTION 'RECIPE_CHECKPOINT_RECIPE_MISMATCH';
   END IF;
   RETURN NEW;
 END $$;
@@ -733,6 +764,28 @@ COMMENT ON TABLE public.ai_photo_batch IS 'Reserved Studio photograph package; p
 
 
 --
+-- Name: ai_recipe_manual_repair; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_recipe_manual_repair (
+    id text NOT NULL,
+    job_id text NOT NULL,
+    recipe_id text NOT NULL,
+    version integer NOT NULL,
+    proposal jsonb NOT NULL,
+    reviewed_ingredients jsonb NOT NULL,
+    reason text NOT NULL,
+    actor_id text NOT NULL,
+    actor_name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ai_recipe_manual_repair_proposal_check CHECK ((jsonb_typeof(proposal) = 'object'::text)),
+    CONSTRAINT ai_recipe_manual_repair_reason_check CHECK (((length(reason) >= 10) AND (length(reason) <= 2000))),
+    CONSTRAINT ai_recipe_manual_repair_reviewed_ingredients_check CHECK ((jsonb_typeof(reviewed_ingredients) = 'array'::text)),
+    CONSTRAINT ai_recipe_manual_repair_version_check CHECK ((version > 0))
+);
+
+
+--
 -- Name: ai_recipe_recovery; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -758,6 +811,21 @@ CREATE TABLE public.ai_recipe_recovery (
     CONSTRAINT ai_recipe_recovery_generation_check CHECK ((generation > 0)),
     CONSTRAINT ai_recipe_recovery_repair_issues_check CHECK ((jsonb_typeof(repair_issues) = 'array'::text)),
     CONSTRAINT ai_recipe_recovery_trend_generation_check CHECK ((trend_generation > 0))
+);
+
+
+--
+-- Name: ai_recipe_response; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_recipe_response (
+    job_id text NOT NULL,
+    request_id text NOT NULL,
+    response jsonb NOT NULL,
+    digest text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ai_recipe_response_check CHECK (((jsonb_typeof(response) = 'object'::text) AND ((response ->> 'id'::text) = request_id) AND ((response ->> 'status'::text) = 'completed'::text))),
+    CONSTRAINT ai_recipe_response_digest_check CHECK ((digest ~ '^[a-f0-9]{64}$'::text))
 );
 
 
@@ -1652,5 +1720,5 @@ CREATE TABLE public.trend_setting_audit (
 -- PostgreSQL database dump complete
 --
 
-\unrestrict qW1oEqiYp4UyyTXo1FO7wjMCXRZLpAa7wohfTmgKzvp89CKabPWLhq8sZjroJXS
+\unrestrict 3J0AdVKP4vwsgmoaK2ymyScL3UnjvxCFT7KWu7Hpo0PYwcRL3adTfIWFHruUtY3
 

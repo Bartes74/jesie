@@ -62,7 +62,7 @@ function assertActive(recipe: ApprovalRecipe) {
 
 async function assertComplete(recipe: ApprovalRecipe, db: Database) {
   assertActive(recipe);
-  const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients, db);
+  const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients, db, recipe.content.recipe.id);
   const issues = recipeContentIssues(recipe.content, verifiedAliases);
   if (issues.length) throw new EditorialError(422, 'CONTENT_REVIEW_REQUIRED', 'Uzupełnij i sprawdź treść przepisu przed generowaniem zdjęć.', undefined, issues);
 }
