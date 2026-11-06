@@ -66,6 +66,25 @@ async function invalid(id: string, feedback = true, chargedUsd = '0.71123') {
 }
 async function ledger(id: string) { return (await pool.query('SELECT entry,amount_usd,basis FROM ai_cost_ledger WHERE job_id=$1 ORDER BY entry', [id])).rows; }
 
+test('a lost initial workflow dispatch preserves queued proof and admits one resumable original submission after its lease', async () => {
+  const { job } = await fixture();
+  await markRecipeRecoveryDispatchUnconfirmed(job.id, 1);
+  assert.equal((await getJobForExecution(job.id)).status, 'queued');
+  assert.equal((await getJob(job.id)).recovery?.canResume, true);
+  assert.equal((await beginRecipeResultRecovery(job.id, actor)).dispatch, false);
+  await assert.rejects(beginRecipeResultRecovery(job.id, actor, undefined, { existingOnly: true }), { code: 'RECIPE_RECOVERY_RECEIPT_REQUIRED' });
+  await pool.query("UPDATE ai_recipe_recovery SET dispatch_claimed_at=now()-interval '3 minutes' WHERE job_id=$1", [job.id]);
+  const attempts = await Promise.all([beginRecipeResultRecovery(job.id, actor), beginRecipeResultRecovery(job.id, actor)]);
+  assert.equal(attempts.filter(attempt => attempt.dispatch).length, 1);
+  const winner = attempts.find(attempt => attempt.dispatch)!;
+  assert.equal(winner.job.id, job.id); assert.equal(winner.job.status, 'queued');
+  assert.equal(await claimRecipeRecoveryWorker(job.id, 1, 'late-original-worker'), false);
+  assert.equal(await claimRecipeRecoveryWorker(job.id, winner.generation, 'resumed-worker'), true);
+  const claims = await Promise.all([claimSubmission(job.id), claimSubmission(job.id)]);
+  assert.equal(claims.filter(claim => claim.shouldSubmit).length, 1);
+  assert.equal((await pool.query('SELECT attempt FROM ai_recipe_recovery WHERE job_id=$1', [job.id])).rows[0].attempt, 0);
+});
+
 async function dailyFixture(dietTarget?: RecipeDietId) {
   const id = randomUUID(), runId = randomUUID(); const input = content(id);
   if (dietTarget) input.aiPhotography = { recipeDietTarget: dietTarget };
@@ -289,17 +308,18 @@ test('recovery dispatch is idempotent and a late accepted worker resumes the sam
   const { job } = await fixture(); await invalid(job.id, false);
   const [first, duplicate] = await Promise.all([beginRecipeResultRecovery(job.id, actor), beginRecipeResultRecovery(job.id, actor)]);
   assert.equal([first, duplicate].filter(item => item.dispatch).length, 1);
-  await markRecipeRecoveryDispatchUnconfirmed(job.id, 1);
+  const generation = [first, duplicate].find(item => item.dispatch)!.generation;
+  await markRecipeRecoveryDispatchUnconfirmed(job.id, generation);
   assert.equal((await getJobForExecution(job.id)).status, 'uncertain');
-  assert.equal(await claimRecipeRecoveryWorker(job.id, 1, 'late-worker'), true);
+  assert.equal(await claimRecipeRecoveryWorker(job.id, generation, 'late-worker'), true);
   assert.equal((await getJobForExecution(job.id)).status, 'generating');
   assert.equal((await claimSubmission(job.id)).shouldSubmit, false);
-  assert.equal(await claimRecipeRecoveryWorker(job.id, 1, 'other-worker'), false);
-  await markRecipeRecoveryDispatchUnconfirmed(job.id, 1); // The response-loss catch cannot stop an already claimed worker.
+  assert.equal(await claimRecipeRecoveryWorker(job.id, generation, 'other-worker'), false);
+  await markRecipeRecoveryDispatchUnconfirmed(job.id, generation); // The response-loss catch cannot stop an already claimed worker.
   assert.equal((await getJobForExecution(job.id)).status, 'generating');
-  const restarted = await beginRecipeResultRecovery(job.id, actor, { generation: 1, workflowRunId: 'late-worker', status: 'terminated' });
-  assert.equal(restarted.generation, 2); assert.equal(await claimRecipeRecoveryWorker(job.id, 1, 'late-worker'), false);
-  assert.equal(await claimRecipeRecoveryWorker(job.id, 2, 'replacement'), true);
+  const restarted = await beginRecipeResultRecovery(job.id, actor, { generation, workflowRunId: 'late-worker', status: 'terminated' });
+  assert.equal(restarted.generation, generation + 1); assert.equal(await claimRecipeRecoveryWorker(job.id, generation, 'late-worker'), false);
+  assert.equal(await claimRecipeRecoveryWorker(job.id, generation + 1, 'replacement'), true);
 });
 
 test('known usage and immutable ledger survive recovery cancellation and an operational GET failure', async () => {

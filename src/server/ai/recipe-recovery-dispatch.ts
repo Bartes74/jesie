@@ -14,6 +14,16 @@ async function recoveryState(id: string) {
   return { job, entry: readable.entry };
 }
 
+/** A queued job has not reached provider submission. Retain that proof if workflow dispatch is interrupted. */
+export async function dispatchNewRecipeGeneration(id: string) {
+  let runId: string;
+  try { runId = (await start(aiGeneration, [id, 1], { region: 'fra1' })).runId; }
+  catch { await markRecipeRecoveryDispatchUnconfirmed(id, 1); return getJob(id); }
+  try { await recordRecipeRecoveryDispatch(id, 1, runId); }
+  catch { console.info('Recipe workflow receipt persistence deferred', { jobId: id }); }
+  return getJob(id);
+}
+
 type Dependencies = {
   state: typeof recoveryState;
   begin: typeof beginRecipeResultRecovery;

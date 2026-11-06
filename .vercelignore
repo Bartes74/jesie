@@ -10,6 +10,7 @@ artifacts/
 node_modules/
 .git/
 .claude/
+.claude/**
 
 .env*
 .next/

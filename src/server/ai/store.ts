@@ -305,6 +305,9 @@ export async function createJobAdmission(input: CreateAiJob, actor: EditorialAct
     }
     // Capture admission time after waiting for the shared concurrency lock.
     const [job]=await tx.insert(aiJobs).values({...createValues,reservedUsd:'0',createdAt:trendRunId?undefined:new Date(limits.serverNow!)}).returning();
+    if (job.kind === 'recipe' && !options.recipeRepairParentId) await tx.insert(aiRecipeRecoveries).values({
+      jobId: job.id, rootJobId: job.id, attempt: 0, dispatchClaimedAt: new Date(),
+    });
     return {job:jobDto(job),created:true};
   };
   return options.transaction ? admit(options.transaction) : getDb().transaction(admit);

@@ -1,5 +1,4 @@
 import 'server-only';
-import { start } from 'workflow/api';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { EditorialActor } from '@/lib/editorial-types';
@@ -7,13 +6,13 @@ import { reviewKeys } from '@/lib/editorial-types';
 import { heroPresentationReviewSchema } from '@/lib/hero-presentation-review';
 import { getDb } from '@/server/db';
 import { aiJobs, aiPhotoBatches } from '@/server/ai/schema';
-import { applyJob, budgetLock, createJobAdmission, failJob, getJob, listJobs } from '@/server/ai/store';
+import { applyJob, budgetLock, createJobAdmission, getJob, listJobs } from '@/server/ai/store';
+import { dispatchNewRecipeGeneration } from '@/server/ai/recipe-recovery-dispatch';
 import { samePhotoSubject } from '@/server/ai/photo-subject';
 import { applyPhotoBatch, createPhotoBatch, getPhotoBatch, listPhotoBatches } from '@/server/ai/photo-batch';
 import { recoverPhotoBatch } from '@/server/ai/photo-batch-recovery';
 import { recoverAcceptedPhotoBatchChildren } from '@/server/ai/accepted-photo-batch-recovery';
 import { dispatchPhotoBatch } from '@/server/ai/photo-batch-dispatch';
-import { aiGeneration } from '@/workflows/ai-generation';
 import { approveRecipeContent, isRecipeContentApproved } from './content-approval';
 import { EditorialError, getRecipe, getRecipeInTransaction, performRecipeActionInTransaction, verifiedPublicationIssues, type EditorialTransaction } from './store';
 
@@ -90,10 +89,7 @@ export async function prepareRecipe(id: string, input: PreparationInput, actor: 
       if (existing?.baseRevision === current.recipe.revision && ['queued', 'submitting', 'generating', 'uncertain', 'ready'].includes(existing.status)) return current;
       const { job, created } = await createJobAdmission({ recipeId: id, expectedRevision: input.expectedRevision, kind: 'recipe',
         brief: 'Zrób research dania wskazanego w tytule i notatkach. Porównaj wiarygodne źródła kulinarne, uzupełnij wszystkie brakujące pola szablonu oraz przygotuj spójny przepis PL i en-GB. Uszanuj zamysł autora. Wyjaśnij w uwagach istotne korekty proporcji, techniki i przyjęte założenia. Nie generuj zdjęć i nie publikuj przepisu.', requestKey: input.requestKey }, actor);
-      if (created && job.status === 'queued') {
-        try { await start(aiGeneration, [job.id], { region: 'fra1' }); }
-        catch { await failJob(job.id, { code: 'AI_DISPATCH_UNCONFIRMED', message: 'Nie potwierdzono uruchomienia zadania. Zachowano zlecenie; nie wysyłaj drugiego generowania.', uncertain: true }); }
-      }
+      if (created && job.status === 'queued') await dispatchNewRecipeGeneration(job.id);
       break;
     }
     case 'apply_text':
@@ -105,7 +101,7 @@ export async function prepareRecipe(id: string, input: PreparationInput, actor: 
     case 'generate_photos': {
       if (!current.contentApproved) throw new EditorialError(422, 'CONTENT_REVIEW_REQUIRED', 'Najpierw przeczytaj i zaakceptuj treść przepisu.');
       const existing = current.photoBatch;
-      if (existing?.canResume && current.photoBatchCompatible && ['blocked', 'failed'].includes(existing.status)) {
+      if (existing?.canResume && current.photoBatchCompatible && ['queued', 'generating', 'blocked', 'failed'].includes(existing.status)) {
         await recoverAcceptedPhotoBatchChildren(existing.id, actor);
         const resumed = await recoverPhotoBatch(existing.id, actor);
         if (resumed.dispatch) await dispatchPhotoBatch(existing.id, resumed.generation);
