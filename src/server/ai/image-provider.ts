@@ -382,7 +382,9 @@ async function savePhoto(jobId: string, original: Buffer, formatted: Buffer, pre
     ? await withPhotoReadStage({ jobId, requestId, stage: 'photo-encode' }, () => compactPhoto(original, formatted, preservePixels))
     : await compactPhoto(original, formatted, preservePixels);
   // New immutable names also allow an older, interrupted PNG upload to be resumed.
-  const originalBlobPathname = `ai/${jobId}/original-v1.webp`;
+  // A separate archive is content-addressed: a cutout re-encodes its generated
+  // source deterministically, so both jobs share one lossless editing archive.
+  const originalBlobPathname = shared ? `ai/${jobId}/original-v1.webp` : `ai/archive/v1/${createHash('sha256').update(archive).digest('hex')}.webp`;
   const blobPathname = shared ? originalBlobPathname : `ai/${jobId}/web-v1.webp`;
   await putOnce(originalBlobPathname, archive, 'image/webp', requestId ? { jobId, requestId, variant: 'archive' } : undefined);
   if (!shared) await putOnce(blobPathname, web, 'image/webp', requestId ? { jobId, requestId, variant: 'web' } : undefined);
