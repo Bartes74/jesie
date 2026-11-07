@@ -1,7 +1,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { parse } from 'dotenv';
 import type { EditorialActor, EditorialContent } from '@/lib/editorial-types';
@@ -57,8 +57,8 @@ before(async () => {
   assert.equal((await isolatedPool.query('SELECT current_schema() AS name')).rows[0].name, schema);
   await isolatedPool.query(`CREATE TABLE auth_user(id text PRIMARY KEY,name text NOT NULL,email text NOT NULL UNIQUE,email_verified boolean NOT NULL DEFAULT false,image text,role text NOT NULL DEFAULT 'admin',disabled boolean NOT NULL DEFAULT false,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now())`);
   await isolatedPool.query(`INSERT INTO auth_user(id,name,email,role) VALUES('test-owner','Stored owner','owner@example.invalid','owner'),('test-admin','Stored admin','admin@example.invalid','admin')`);
-  for (const migration of ['0001-editorial','0002-ai','0003-trends','0004-trend-research','0005-trend-manual-runs','0006-ingredient-reuse','0007-local-photo-corrections','0008-ai-photo-batches','0009-ai-budget-settings','0010-daily-publication','0011-seo-discovery','0014-seo-workflows', '0015-recipe-trash','0017-publication-plan','0018-content-approval','0019-simplified-daily-automation','0020-manual-automation-takeover','0021-recipe-result-recovery','0026-remove-spending-limits','0027-manual-review-workflow','0028-ingredient-dictionary','0029-ingredient-evidence-recheck'])
-    await isolatedPool.query(await readFile(`migrations/${migration}.sql`, 'utf8'));
+  for (const file of (await readdir('migrations')).filter(file => /^\d{4}-.*\.sql$/.test(file)).sort())
+    await isolatedPool.query(await readFile(`migrations/${file}`, 'utf8'));
   Object.assign(process.env, { OPENAI_API_KEY: 'test-unused', FAL_KEY: 'test-unused', FAL_API_KEY: '', BLOB_READ_WRITE_TOKEN: 'test-unused', CRON_SECRET: 'test-unused', AI_DAILY_LIMIT_USD: '100', AI_MONTHLY_LIMIT_USD: '100', AI_PILOT_LIMIT_USD: '100', AI_RECIPE_MODEL: 'gpt-6-astra', AI_IMAGE_MODEL: 'openai/gpt-image-2.5/sunburst/text-to-image', AI_TREND_MODEL: 'gpt-6.1-sol' });
   originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error('This test must not call any HTTP/provider API.'); };

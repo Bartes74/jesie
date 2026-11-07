@@ -1,7 +1,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { config, parse } from 'dotenv';
 import { recipes } from '@/lib/recipes';
@@ -46,15 +46,8 @@ before(async () => {
   pool = new Pool({ connectionString: url.toString(), max: 2, connectionTimeoutMillis: 20_000, query_timeout: 30_000 });
   await pool.query('CREATE TABLE auth_user(id text PRIMARY KEY,name text NOT NULL,email text NOT NULL UNIQUE,email_verified boolean NOT NULL DEFAULT false,image text,role text NOT NULL DEFAULT \'admin\',disabled boolean NOT NULL DEFAULT false,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now())');
   await pool.query("INSERT INTO auth_user(id,name,email,role) VALUES('owner','Owner','owner@example.invalid','owner'),('admin','Reviewer','admin@example.invalid','admin')");
-  for (const migration of ['0001-editorial', '0002-ai', '0003-trends', '0004-trend-research', '0005-trend-manual-runs', '0006-ingredient-reuse', '0007-local-photo-corrections', '0008-ai-photo-batches', '0009-ai-budget-settings', '0010-daily-publication', '0011-seo-discovery', '0013-reviewed-publication-guard', '0014-seo-workflows', '0015-recipe-trash', '0017-publication-plan', '0018-content-approval'])
-    await pool.query(await readFile(`migrations/${migration}.sql`, 'utf8'));
-  await pool.query(await readFile('migrations/0019-simplified-daily-automation.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0020-manual-automation-takeover.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0021-recipe-result-recovery.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0026-remove-spending-limits.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0027-manual-review-workflow.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0028-ingredient-dictionary.sql', 'utf8'));
-  await pool.query(await readFile('migrations/0029-ingredient-evidence-recheck.sql', 'utf8'));
+  for (const file of (await readdir('migrations')).filter(file => /^\d{4}-.*\.sql$/.test(file)).sort())
+    await pool.query(await readFile(`migrations/${file}`, 'utf8'));
   Object.assign(process.env, { OPENAI_API_KEY: 'test-unused', FAL_KEY: 'test-unused', BLOB_READ_WRITE_TOKEN: 'test-unused', CRON_SECRET: 'test-unused', AI_RECIPE_MODEL: 'gpt-6-astra', AI_IMAGE_MODEL: 'openai/gpt-image-2.5/sunburst/text-to-image', AI_TREND_MODEL: 'gpt-6.1-sol' });
   originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error('No HTTP or paid provider calls are permitted in these tests.'); };
@@ -141,7 +134,7 @@ test('a content edit after explicit decision blocks both queued claim and the fi
   const first = await preparePhotoSlot(fixture.runId, request.generation!, { kind: 'ingredient', targetId: fixture.content.recipe.ingredients[0].id });
   const second = await createJobAdmission({ recipeId: fixture.recipeId, expectedRevision: 1, kind: 'step', targetId: fixture.content.recipe.steps[0].id, brief: 'Explicit step photo', requestKey: randomUUID() }, trendWorker, fixture.runId, { generation: request.generation });
   await claimSubmission(first.jobId!);
-  const recipe = await getRecipe(fixture.recipeId); const changed = structuredClone(recipe.content); changed.recipe.steps[0].text.pl += ' Sprawdź ręcznie gotowość.';
+  const recipe = await getRecipe(fixture.recipeId); const changed = structuredClone(recipe.content); changed.recipe.description.pl += ' Doprecyzowany opis do przeglądu.';
   await saveRecipe(recipe.id, { expectedRevision: recipe.revision, content: changed }, owner);
   await assert.rejects(claimSubmission(second.job.id), { code: 'MANUAL_PHOTO_DECISION_REQUIRED' });
   await assert.rejects(ensureSubmissionAllowed(first.jobId!), { code: 'MANUAL_PHOTO_DECISION_REQUIRED' });
@@ -160,6 +153,19 @@ test('repeated daily admission reuses one research run and does not create photo
   assert.ok('run' in first && 'run' in second); if (!('run' in first && 'run' in second)) return;
   assert.equal(first.created, true); assert.equal(second.created, false); assert.equal(first.run.id, second.run.id);
   assert.equal((await counts()).photos, 0); assert.equal((await counts()).publications, 0);
+});
+
+test('an unresolved previous daily receipt stays intact and does not block tomorrow', async () => {
+  const previous = randomUUID();
+  await pool.query(`INSERT INTO trend_run(id,date,mode,status,search_request_id,search_claimed_at,updated_at,sources)
+    VALUES($1,'2030-11-06','daily','searching','retained-receipt','2030-11-06T12:01Z','2030-11-06T12:01Z','{}')`, [previous]);
+  const now = new Date('2030-11-07T12:00Z');
+  const next = await admitTrendRun('daily', undefined, now);
+  assert.ok('run' in next && next.created);
+  const row = (await pool.query('SELECT status,search_request_id,search_finished_at FROM trend_run WHERE id=$1', [previous])).rows[0];
+  assert.deepEqual(row, { status: 'uncertain', search_request_id: 'retained-receipt', search_finished_at: null });
+  const repeat = await admitTrendRun('daily', undefined, now);
+  assert.ok('run' in repeat && !repeat.created);
 });
 
 test('research and text schedule does not depend on the optional photography provider', async () => {
