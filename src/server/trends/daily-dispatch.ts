@@ -26,14 +26,23 @@ export async function rearmPublicationTimerForPlan() {
 
 export async function dispatchAdmittedPreparation(admitted: Exclude<Awaited<ReturnType<typeof admitTrendRun>>, { skipped: true }>) {
   if (admitted.created || admitted.restarted || admitted.run.status === 'queued' && !admitted.run.workflowId) {
-    try {
-      const workflow = await start(prepareDailyRecipe, [admitted.run.id, admitted.generation], { region: 'fra1' });
-      await attachTrendWorkflow(admitted.run.id, workflow.runId, admitted.generation);
-    } catch {
+    const started = await startPreparationWorkflow(admitted.run.id, admitted.generation);
+    if (!started && admitted.run.mode !== 'daily')
       await failTrendRun(admitted.run.id, 'Nie potwierdzono uruchomienia przygotowania. Zachowano istniejące żądanie i gotowe materiały.', true, admitted.generation);
-    }
   }
   return getTrendRun(admitted.run.id);
+}
+
+export async function startPreparationWorkflow(runId: string, generation: number) {
+  let workflowId: string;
+  try { workflowId = (await start(prepareDailyRecipe, [runId, generation], { region: 'fra1' })).runId; }
+  catch {
+    console.warn(JSON.stringify({ event: 'daily_preparation_start_unconfirmed', runId, generation }));
+    return false;
+  }
+  try { await attachTrendWorkflow(runId, workflowId, generation); }
+  catch { console.warn(JSON.stringify({ event: 'daily_preparation_attach_unconfirmed', runId, generation })); }
+  return true;
 }
 
 /** Noon researches and drafts text; publication is always a human action. */

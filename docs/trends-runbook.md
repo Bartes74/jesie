@@ -31,6 +31,10 @@ Po ręcznej akceptacji i osobnym zleceniu fotografii kolejność pakietu jest st
 
 Niepewne lub przyjęte już zgłoszenie nie może zostać powielone drugim płatnym POST-em. Najpierw odczytaj zachowany identyfikator i stan dostawcy. Wyłączenie wyszukiwania nie usuwa istniejących wyników, treści, rachunków ani historii. Ręczny szkic i publikacja pozostają dostępne w edytorze zgodnie z uprawnieniami.
 
+Zakończona odpowiedź generatora trafia do punktu wznowienia przed walidacją. Brak potwierdzenia kategorii dietetycznej pozwala zapisać poprawną treść do oceny z pustą kategorią i wskazaniem składnika. Akceptacja treści i publikacja sprawdzają kategorię ponownie. Bibliografia zachowuje tylko źródła potwierdzone odpowiedzią wyszukiwarki, a techniczne adnotacje cytowań są usuwane z tekstu kulinarnego.
+
+Cron `/api/cron/trends/recover` co godzinę sprawdza zatrzymane dzienne szkice z ostatnich 14 dni. Korzysta wyłącznie z lokalnych punktów wznowienia i gotowych wyników. Zapisuje wynik tylko w niezmienionej rewizji, bez nowszego zlecenia i bez decyzji o zdjęciach. Po planowanej godzinie może również uruchomić brakujący dzienny przebieg lub ponowić uruchomienie workera, jeśli wyszukiwanie nie zostało jeszcze zgłoszone dostawcy. Każda data nadal ma najwyżej jeden dzienny przebieg. Logi `daily_draft_recovered` i `daily_draft_recovery_deferred` wskazują przebieg, zadanie i ewentualny kod przeszkody.
+
 Przejęcie redakcyjne i stara historia akceptacji pozostają zachowane. Wznowiony stary worker nie może ominąć obowiązku ręcznej decyzji o fotografiach ani opublikować przepisu. Granica ta obowiązuje także w bazie, niezależnie od wersji kodu uśpionego workera. Dawne rekordy dni publikacji i zegary służą wyłącznie historii; nie są obietnicą przyszłej publikacji.
 
 ## Uruchomienie i kontrola

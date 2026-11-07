@@ -50,7 +50,7 @@ export function compatiblePreparationPhoto(job: Pick<Job, 'kind' | 'targetId' | 
 export function hasPreparedCookingText(content: EditorialContent, verifiedAliases?: VerifiedIngredientDictionary) {
     const tested = structuredClone(content);
     for (const alternative of tested.recipe.substitutions ?? []) alternative.status = 'approved';
-    return publicationIssues(tested, undefined, undefined, verifiedAliases).every(issue => isPhotoIssue(issue.field));
+    return publicationIssues(tested, undefined, undefined, verifiedAliases, { draft: true }).every(issue => isPhotoIssue(issue.field));
 }
 
 function isPhotoIssue(field: string) {
@@ -247,5 +247,6 @@ export async function advancePreparedText(runId: string, generation: number, job
         return { state: 'complete' };
     }
     if (job.status === 'applied') return { state: 'complete' };
-    return { state: terminal(job) ? 'failed' : 'blocked', reason: 'Nie ukończono opracowania treści. Zachowano dotychczasowy przepis.' };
+    return { state: terminal(job) ? 'failed' : 'blocked',
+        reason: job.errorMessage ?? 'Nie ukończono opracowania treści. Zachowano dotychczasowy przepis.' };
 }

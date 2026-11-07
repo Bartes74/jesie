@@ -4,7 +4,7 @@ import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { EditorialAction, EditorialActor, EditorialContent, EditorialRecord, PublicationIssue, RecipeSummary, ReviewChecks } from '../../lib/editorial-types';
 import { reviewKeys } from '../../lib/editorial-types';
 import type { Ingredient, Locale, Recipe } from '../../lib/recipes';
-import { classifyRecipeDiet, type RecipeDietId } from '../../lib/recipe-diet';
+import { inspectRecipeDiet, type RecipeDietId } from '../../lib/recipe-diet';
 import { toPublicRecipe } from '../../lib/recipe-presentation';
 import { assertRecipeHasNoExternalReferences, findRecipeExternalReferences } from '../../lib/recipe-content-policy';
 import { ingredientPhotoIdentity } from '../../lib/citrus-photo-policy';
@@ -57,9 +57,19 @@ async function parseContent(input: unknown, db: Database | Transaction): Promise
   rejectExternalReferences(result.data);
   rejectIngredientPhotoIssues(ingredientPhotoIssues(result.data as EditorialContent));
   rejectRecipePhotoIssues(recipePhotoAssignmentIssues(result.data as EditorialContent));
-  if (result.data.recipe.ingredients.length) result.data.recipe.diet = classifyRecipeDiet(result.data.recipe,
-    await getRecipeVerifiedAliases(result.data.recipe.ingredients, db, result.data.recipe.id));
+  if (result.data.recipe.ingredients.length) {
+    const dietary = inspectRecipeDiet(result.data.recipe, await getRecipeVerifiedAliases(result.data.recipe.ingredients, db, result.data.recipe.id));
+    if (dietary.inferredDiet) result.data.recipe.diet = dietary.inferredDiet;
+    else delete result.data.recipe.diet;
+  }
   return result.data as EditorialContent;
+}
+
+async function indexResolvedDiet(content: EditorialContent, db: Transaction) {
+  if (content.recipe.diet) return content;
+  const aliases = await getRecipeVerifiedAliases(content.recipe.ingredients, db, content.recipe.id);
+  const { inferredDiet } = inspectRecipeDiet(content.recipe, aliases);
+  return inferredDiet ? { ...content, recipe: { ...content.recipe, diet: inferredDiet } } : content;
 }
 
 function ingredientPhotoIssues(content: EditorialContent, knownSources?: IngredientPhotoSources): PublicationIssue[] {
@@ -424,7 +434,7 @@ export async function performRecipeActionInTransaction(tx: Transaction, id: stri
       }
       case 'approve_and_publish': {
         if (!input.checks || reviewKeys.some(key => input.checks?.[key] !== true)) throw new EditorialError(422, 'REVIEW_REQUIRED', 'Potwierdź wszystkie sześć obszarów, w tym oba języki, zdjęcia i zamienniki.');
-        const accepted = structuredClone(original.content);
+        const accepted = await indexResolvedDiet(structuredClone(original.content), tx);
         for (const substitution of accepted.recipe.substitutions ?? []) if (substitution.status === 'to_review') substitution.status = 'approved';
         const acceptedIssues = await verifiedPublicationIssues(accepted, tx);
         if (acceptedIssues.length) throw new EditorialError(422, 'PUBLICATION_BLOCKED', 'Przepis wymaga uzupełnienia przed publikacją.', undefined, acceptedIssues);
@@ -436,10 +446,11 @@ export async function performRecipeActionInTransaction(tx: Transaction, id: stri
       }
       case 'publish': {
         if (original.editorialStatus !== 'approved' || original.approvedRevision !== original.revision || original.checksRevision !== original.revision || reviewKeys.some(key => !original.checks[key]) || issues.length) throw new EditorialError(422, 'PUBLICATION_BLOCKED', 'Publikacja wymaga zatwierdzenia kompletnej, bieżącej wersji.', undefined, issues);
-        await reserveSlugs(tx, id, original.content.recipe);
+        const accepted = await indexResolvedDiet(original.content, tx);
+        await reserveSlugs(tx, id, accepted.recipe);
         const publicationId = randomUUID();
-        await tx.insert(editorialPublications).values({ id: publicationId, recipeId: id, revision: nextRevision, snapshot: original.content, contentHash: contentHash(original.content), checks: original.checks, approvalOrigin: 'manual', publishedBy: account.id, publishedByName: account.name });
-        values = { ...values, publicationStatus: 'published', publishedId: publicationId, publishedRevision: nextRevision };
+        await tx.insert(editorialPublications).values({ id: publicationId, recipeId: id, revision: nextRevision, snapshot: accepted, contentHash: contentHash(accepted), checks: original.checks, approvalOrigin: 'manual', publishedBy: account.id, publishedByName: account.name });
+        values = { ...values, ...(accepted !== original.content ? { content: accepted } : {}), publicationStatus: 'published', publishedId: publicationId, publishedRevision: nextRevision };
         reason = 'Publikacja zatwierdzonej wersji'; changedPublic = true; break;
       }
       case 'unpublish': values = { ...values, publicationStatus: original.publishedId ? 'unpublished' : 'never_published' }; reason = 'Wycofanie publikacji'; changedPublic = true; break;

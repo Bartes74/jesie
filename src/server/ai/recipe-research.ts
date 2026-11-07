@@ -8,12 +8,13 @@ function publicSourceUrl(value: string): string | null {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.includes('.') || /^(?:localhost|127\.|0\.|10\.|192\.168\.|169\.254\.)/.test(url.hostname) || url.hostname.endsWith('.local')) return null;
     url.hash = '';
+    if (url.searchParams.getAll('utm_source').length === 1 && url.searchParams.get('utm_source') === 'openai') url.searchParams.delete('utm_source');
     return url.href;
   } catch { return null; }
 }
 
 /** Bibliography is accepted only when the provider's actual search receipt contains its URL. */
-export function recipeResearchSources(output: Response['output'], proposed: unknown, existing: SourceReference[]): SourceReference[] {
+export function recipeResearchSources(output: Response['output'], proposed: unknown, existing: SourceReference[], options: { draft?: boolean } = {}): SourceReference[] {
   const completed = output.filter(item => item.type === 'web_search_call' && item.status === 'completed');
   if (!completed.length) throw new ProviderError('AI_RESEARCH_REQUIRED', 'Nie potwierdzono researchu. Wynik nie zastąpił przepisu.', false, undefined,
     { issues: [{ field: 'researchSources', message: 'Brakuje zakończonego odczytu web_search potwierdzającego research.' }] });
@@ -41,15 +42,15 @@ export function recipeResearchSources(output: Response['output'], proposed: unkn
   const verified = sources.map(source => ({ ...source, url: publicSourceUrl(source.url) }));
   const issues = verified.flatMap((source, index) => !source.url || !consulted.has(source.url)
     ? [{ field: `researchSources.${index}.url`, message: 'Zastąp ten adres dokładnym publicznym HTTPS URL z zakończonych wyników web_search lub cytowań tej odpowiedzi. Nie twórz nowego adresu.' }] : []);
-  if (issues.length) throw new ProviderError('AI_RESEARCH_SOURCE_INVALID', 'Research wskazał niepotwierdzone źródło. Wynik nie zastąpił przepisu.', false, undefined,
+  if (issues.length && (!options.draft || issues.length === verified.length)) throw new ProviderError('AI_RESEARCH_SOURCE_INVALID', 'Research wskazał niepotwierdzone źródło. Wynik nie zastąpił przepisu.', false, undefined,
     { issues, repairable: true });
   const result = [...existing];
   const urls = new Set(existing.map(source => publicSourceUrl(source.url)).filter(Boolean));
-  for (const source of verified) if (!urls.has(source.url!)) {
+  for (const source of verified) if (source.url && consulted.has(source.url) && !urls.has(source.url)) {
     let suffix = result.length + 1;
     while (result.some(item => item.id === `research-${suffix}`)) suffix++;
-    result.push({ id: `research-${suffix}`, title: source.title, url: source.url! });
-    urls.add(source.url!);
+    result.push({ id: `research-${suffix}`, title: source.title, url: source.url });
+    urls.add(source.url);
   }
   return result.slice(0, 100);
 }

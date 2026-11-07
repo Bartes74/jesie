@@ -50,7 +50,7 @@ function unresolved(ingredient: Ingredient, row?: Verification | null): Provider
 }
 
 /** Re-check one retained recipe response; each unknown identity has at most one durable paid lookup. */
-export function recipeIngredientResolver(input: EditorialContent, deps: IngredientResolutionDependencies, options: { existingOnly?: boolean } = {}) {
+export function recipeIngredientResolver(input: EditorialContent, deps: IngredientResolutionDependencies, options: { existingOnly?: boolean; draft?: boolean; localOnly?: boolean } = {}) {
   return async (raw: unknown): Promise<RecipeIngredientResolution> => {
     const empty: RecipeIngredientResolution = { pending: false, dictionary: new Map(), notes: [], sources: [] };
     // Malformed recipe payloads must follow the normal validator, without buying research.
@@ -59,10 +59,23 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
     const ingredients: Ingredient[] = parsed.data.ingredients.map(({ note, ...item }) => ({ ...item,
       ...(note ? { note } : {}) }));
     const candidates = ingredients.filter(unknownBase);
+    if (options.localOnly) {
+      const dictionary = await deps.aliases(ingredients.flatMap(item => [item.name.pl, item.name.en]));
+      for (const ingredient of candidates) {
+        const row = await deps.find({ name: ingredient.name });
+        if (row?.errorCode === 'INGREDIENT_ALIAS_CONFLICT') throw unresolved(ingredient, row);
+      }
+      return { ...empty, dictionary };
+    }
     if (!candidates.length) return { ...empty, dictionary: await deps.aliases(ingredients.flatMap(item => [item.name.pl, item.name.en])) };
     const allNames = candidates.flatMap(item => [item.name.pl, item.name.en]);
     let dictionary = await deps.aliases(allNames);
     const notes: string[] = [], sources: SourceReference[] = [];
+    const review = (ingredient: Ingredient, row?: Verification | null) => {
+      const issue = unresolved(ingredient, row);
+      if (!options.draft || row?.errorCode === 'INGREDIENT_ALIAS_CONFLICT') throw issue;
+      notes.push(`Składnik do sprawdzenia: ${issue.issues[0].message}`);
+    };
     const seen = new Set<string>();
     for (const ingredient of candidates) {
       const query: IngredientVerificationInput = { name: ingredient.name };
@@ -99,11 +112,17 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
         continue;
       }
       if (!row) {
-        if (options.existingOnly) throw unresolved(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
-          errorMessage: 'Brak zapamiętanego potwierdzenia tej nazwy. Sprawdzanie zapisanego wyniku nie uruchamia nowych płatnych badań składników.' });
+        if (options.existingOnly) {
+          review(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
+            errorMessage: 'Brak zapamiętanego potwierdzenia tej nazwy. Sprawdzanie zapisanego wyniku nie uruchamia nowych płatnych badań składników.' });
+          continue;
+        }
         try { await deps.checkPermission(); }
-        catch { throw unresolved(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
-          errorMessage: 'Szkic lub stan generowania zmienił się. Dodatkowa weryfikacja nie została wysłana.' }); }
+        catch {
+          review(ingredient, { key: '', input: query, status: 'failed', providerRequestId: null, result: null,
+            errorMessage: 'Szkic lub stan generowania zmienił się. Dodatkowa weryfikacja nie została wysłana.' });
+          continue;
+        }
         const claim = await deps.claim(query); row = claim.verification;
         if (claim.claimed && claim.claimToken) {
           await deps.pending(ingredient.name.pl || ingredient.name.en);
@@ -117,7 +136,8 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
           } catch (error) {
             const failure = error instanceof ProviderError ? error : new ProviderError('AI_INGREDIENT_VERIFICATION_SUBMISSION_UNCERTAIN', 'Nie potwierdzono wysłania sprawdzenia. Nie ponawiamy płatnego żądania.', true);
             await deps.fail(row, claim.claimToken, failure);
-            throw unresolved(ingredient, { ...row, errorMessage: failure.message });
+            review(ingredient, { ...row, errorMessage: failure.message });
+            continue;
           }
         }
       }
@@ -137,18 +157,22 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
           // A database write failure after a completed GET can be retried safely using the same receipt.
           if (!(error instanceof ProviderError)) throw new ProviderError('AI_PROVIDER_STATUS_UNAVAILABLE', failure.message, true);
           await deps.fail(row, undefined, failure);
-          throw unresolved(ingredient, { ...row, errorMessage: failure.message });
+          review(ingredient, { ...row, errorMessage: failure.message });
+          continue;
         }
       }
       if (row.status === 'submitting') {
-        if (options.existingOnly) throw unresolved(ingredient, row);
+        if (options.existingOnly) { review(ingredient, row); continue; }
         await deps.pending(ingredient.name.pl || ingredient.name.en);
         // claim() expires an abandoned submit without ever submitting it again.
         await deps.claim(query);
         return { pending: true, dictionary, notes, sources };
       }
       if (!row.result?.autoLearnEligible || !row.learned || row.status !== 'complete' || row.errorCode === 'INGREDIENT_ALIAS_CONFLICT' || !namesKnown()
-        || inspectRecipeDiet({ ingredients: [{ ...ingredient, note: undefined }] }, dictionary).uncertainIngredients.length) throw unresolved(ingredient, row);
+        || inspectRecipeDiet({ ingredients: [{ ...ingredient, note: undefined }] }, dictionary).uncertainIngredients.length) {
+        review(ingredient, row);
+        continue;
+      }
       sources.push(...evidence(row.result, row.key));
       notes.push(`Potwierdzono składnik „${ingredient.name.pl || ingredient.name.en}” i zapisano jego dokładną nazwę w słowniku ze źródłami.`);
     }
@@ -156,7 +180,7 @@ export function recipeIngredientResolver(input: EditorialContent, deps: Ingredie
   };
 }
 
-export async function resolveRecipeIngredients(job: { id: string; recipeId: string; input: EditorialContent }, raw: unknown, options: { existingOnly?: boolean } = {}) {
+export async function resolveRecipeIngredients(job: { id: string; recipeId: string; input: EditorialContent }, raw: unknown, options: { existingOnly?: boolean; draft?: boolean; localOnly?: boolean } = {}) {
   const store = await import('./ingredient-dictionary-store');
   const provider = await import('./ingredient-verification-provider');
   const jobs = await import('./store');

@@ -154,12 +154,18 @@ export type RecipeResponseCheckpoint = {
 };
 
 export async function pollText(model: string, requestId: string, input: EditorialContent, ancestorRequestIds: readonly string[] = [],
-  resolveIngredients?: (raw: unknown) => Promise<RecipeIngredientResolution>, checkpoint?: RecipeResponseCheckpoint) {
+  resolveIngredients?: (raw: unknown) => Promise<RecipeIngredientResolution>, checkpoint?: RecipeResponseCheckpoint,
+  options: { draft?: boolean; checkpointOnly?: boolean } = {}) {
   if (ancestorRequestIds.length > maximumTextRepairAttempts || new Set(ancestorRequestIds).size !== ancestorRequestIds.length
     || ancestorRequestIds.some(id => !receiptId.test(id) || id === requestId)) throw new ProviderError('AI_REPAIR_LINEAGE_INVALID', 'Historia naprawy wyniku jest niespójna.');
   const research = input.aiPhotography?.recipeResearchVersion === recipeResearchVersion;
   const retrieveOptions = research ? { include: ['web_search_call.action.sources' as const] } : undefined;
-  const retrieve = async (id: string, chargedUsd?: string) => await checkpoint?.read(id) ?? retrieveResponse(client(), id, retrieveOptions, chargedUsd);
+  const retrieve = async (id: string, chargedUsd?: string) => {
+    const retained = await checkpoint?.read(id);
+    if (retained) return retained;
+    if (options.checkpointOnly) throw new ProviderError('AI_CHECKPOINT_MISSING', 'Brakuje kompletnego punktu wznowienia przepisu.', true);
+    return retrieveResponse(client(), id, retrieveOptions, chargedUsd);
+  };
   const response = await retrieve(requestId);
   const tokens = response.usage ? usageCost(model, response.usage) : null;
   const searches = response.output.filter(item => item.type === 'web_search_call').length;
@@ -167,7 +173,7 @@ export async function pollText(model: string, requestId: string, input: Editoria
   if (response.status === 'queued' || response.status === 'in_progress') return { done: false as const };
   if (response.status !== 'completed') throw new ProviderError('AI_GENERATION_FAILED', 'Usługa treści nie ukończyła poprawnego wyniku. Sprawdź wskazówki lub limit odpowiedzi.', false, cost?.chargedUsd);
   if (response.id !== requestId) throw new ProviderError('AI_REPAIR_LINEAGE_INVALID', 'Odczytano inny wynik przepisu.', false, cost?.chargedUsd);
-  if (checkpoint) await checkpoint.retain(response);
+  if (checkpoint && !options.checkpointOnly) await checkpoint.retain(response);
   if (response.output.some(item => item.type === 'message' && item.content.some(part => part.type === 'refusal'))) throw new ProviderError('AI_GENERATION_REFUSED', 'Model nie przygotował przepisu dla tego briefu.', false, cost?.chargedUsd);
   // Read-only evidence from separately billed jobs. Their usage must not be charged a second time.
   const ancestors = await Promise.all(ancestorRequestIds.map(id => retrieve(id, cost?.chargedUsd)));
@@ -181,6 +187,10 @@ export async function pollText(model: string, requestId: string, input: Editoria
     if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) throw new ProviderError('AI_RESULT_INVALID', 'Wynik wymaga obiektu przepisu.', false, undefined,
       { issues: [{ field: 'recipe', message: 'Zwróć kompletny obiekt przepisu zgodny ze schematem.' }], repairable: true });
     const raw = normalized as Record<string, unknown>;
+    const { researchSources: proposedSources, ...fields } = raw;
+    const verifiedSources = research
+      ? recipeResearchSources([...ancestors.flatMap(item => item.output), ...response.output], proposedSources, input.sources, options)
+      : undefined;
     let ingredients: RecipeIngredientResolution | undefined;
     try { ingredients = resolveIngredients ? await resolveIngredients(raw) : undefined; }
     catch (error) {
@@ -188,11 +198,10 @@ export async function pollText(model: string, requestId: string, input: Editoria
       throw new ProviderError('AI_PROVIDER_STATUS_UNAVAILABLE', 'Sprawdzenie zapamiętanych składników jest chwilowo niedostępne. Zachowano istniejący wynik przepisu.', true);
     }
     if (ingredients?.pending) return { done: false as const };
-    const { researchSources: proposedSources, ...fields } = raw;
-    const proposal = buildRecipeProposal(research ? fields : raw, input, ingredients?.dictionary);
-    if (research) proposal.content.sources = recipeResearchSources([...ancestors.flatMap(item => item.output), ...response.output], proposedSources, input.sources);
+    const proposal = buildRecipeProposal(research ? fields : raw, input, ingredients?.dictionary, options);
+    if (verifiedSources) proposal.content.sources = verifiedSources;
     if (ingredients) {
-      proposal.notes.push(...ingredients.notes);
+      proposal.notes.unshift(...ingredients.notes);
       const seen = new Set(proposal.content.sources.map(source => source.url));
       for (const source of ingredients.sources) if (!seen.has(source.url) && proposal.content.sources.length < 20) {
         proposal.content.sources.push(source); seen.add(source.url);

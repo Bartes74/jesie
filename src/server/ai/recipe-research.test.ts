@@ -4,7 +4,7 @@ import type { EditorialContent } from '@/lib/editorial-types';
 import { recipes } from '@/lib/recipes';
 import { recipeResearchSources } from './recipe-research';
 import { responseRepairRequest, responseRequest } from './text-provider';
-import { recipeResearchVersion, recipeProposalVersion } from './recipe-proposal';
+import { normalizeRecipeProposal, recipeResearchVersion, recipeProposalVersion } from './recipe-proposal';
 import { ProviderError } from './provider-error';
 
 const source = { title: 'Technika gotowania', url: 'https://www.bbcgoodfood.com/recipes/lemon-pasta' };
@@ -57,4 +57,26 @@ test('a structured source list never substitutes for a completed search receipt'
   const inProgress = structuredClone(receipt);
   if (inProgress[0].type === 'web_search_call') inProgress[0].status = 'in_progress';
   assert.throws(() => recipeResearchSources(inProgress, [source], []), (error: unknown) => error instanceof ProviderError && error.code === 'AI_RESEARCH_REQUIRED');
+});
+
+test('a draft keeps only corroborated bibliography and ignores provider tracking parameters', () => {
+  const unverified = { title: 'Zmyślone źródło', url: 'https://invented.example/recipe' };
+  const sources = recipeResearchSources(receipt, [{ ...source, url: source.url + '?utm_source=openai' }, unverified], [], { draft: true });
+  assert.deepEqual(sources.map(item => item.url), [source.url]);
+  assert.throws(() => recipeResearchSources(receipt, [unverified], [], { draft: true }), ProviderError);
+});
+
+test('citation cleanup preserves temperature, timing, prose and meaningful links', () => {
+  const raw = {
+    steps: [{ id: 'roast', text: {
+      pl: 'Piecz 12–18 min, do 63°C. ([fda.gov](https://www.fda.gov/food/cooking?utm_source=openai))',
+      en: 'Bake for 12–18 min, until 63°C. citeturn1search0',
+    } }],
+    storage: { pl: 'Porównaj [instrukcję chłodzenia](https://food.gov.uk/cooling).', en: 'Cool promptly.' },
+    researchSources: [source],
+  };
+  const cleaned = normalizeRecipeProposal(raw) as typeof raw;
+  assert.deepEqual(cleaned.steps[0].text, { pl: 'Piecz 12–18 min, do 63°C.', en: 'Bake for 12–18 min, until 63°C.' });
+  assert.deepEqual(cleaned.storage, raw.storage);
+  assert.deepEqual(cleaned.researchSources, raw.researchSources);
 });

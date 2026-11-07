@@ -100,7 +100,8 @@ export async function pollGeneration(id: string, existingRecipeOnly = false) {
     if (job.kind === 'recipe') {
       const recovery = await recipeRecoverySubmission(id);
       const result = await pollText(job.model, job.providerRequestId, job.input, recovery.ancestorRequestIds,
-        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly }), recipeResponseCheckpoint(job.id));
+        raw => resolveRecipeIngredients(job, raw, { existingOnly: existingRecipeOnly, draft: !existingRecipeOnly }),
+        recipeResponseCheckpoint(job.id), { draft: !existingRecipeOnly });
       if (!result.done) return false;
       await finishRecipe(id, result.content, result.cost, result.notes, { verifiedResearchSources: true });
     } else {

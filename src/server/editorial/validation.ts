@@ -97,13 +97,17 @@ function validPositive(value: string): boolean {
   try { const amount = new Decimal(value); return amount.isFinite() && amount.gt(0); } catch { return false; }
 }
 
-export function publicationIssues(content: EditorialContent, registered: RegisteredAssets = new Map(), knownLemonSources?: ReadonlyMap<string, LemonPhotoForm>, verifiedAliases?: VerifiedIngredientDictionary): PublicationIssue[] {
+export function publicationIssues(content: EditorialContent, registered: RegisteredAssets = new Map(), knownLemonSources?: ReadonlyMap<string, LemonPhotoForm>, verifiedAliases?: VerifiedIngredientDictionary, options: { draft?: boolean } = {}): PublicationIssue[] {
   const recipe = content.recipe;
   const issues: PublicationIssue[] = [];
   const add = (field: string, message: string) => issues.push({ field, message });
-  if (recipe.diet) {
+  if (recipe.diet || !options.draft && recipe.ingredients.length) {
     const dietary = inspectRecipeDiet(recipe, verifiedAliases);
-    if (!dietary.inferredDiet) for (const item of dietary.uncertainIngredients) add(`ingredients.${item.ingredientId}.name`, 'Doprecyzuj podstawowy skład produktu przed przypisaniem kategorii dania.');
+    if (!options.draft && !dietary.inferredDiet) for (const item of dietary.uncertainIngredients) {
+      const ingredient = recipe.ingredients.find(ingredient => ingredient.id === item.ingredientId);
+      const name = ingredient?.name.pl || ingredient?.name.en || item.ingredientId;
+      add(`ingredients.${item.ingredientId}.name`, `Sprawdź składnik „${name}” i doprecyzuj jego podstawowy skład przed przypisaniem kategorii dania.`);
+    }
     for (const item of dietary.issues) add(item.field, item.message);
   }
   issues.push(...recipePhotoAssignmentIssues(content));

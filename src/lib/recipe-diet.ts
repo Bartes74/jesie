@@ -76,6 +76,7 @@ const knownPlant = /\b(?:plantreplacement|water|salt|pepper(?:corns)?|oil|vinega
 // vocabulary is checked only after animal evidence and compound formulations;
 // a recognised plant word must never certify an unspecified sauce or stock.
 const plantVocabulary = {
+  grains: /\b(?:kuskus(?:u|em|ie)?|semolin\w*)\b/,
   nutsAndSeeds: /\b(?:orzeszek|orzeszk(?:a|owi|iem|u|i|ow|om|ami|ach))\s+ziemn(?:y|ego|emu|ym|e|ych|ymi)\b/,
   vegetables: /\b(?:aubergines?|eggplants?|leeks?|fennel|kohlrabi|artichokes?|asparagus|radish(?:es)?|turnips?|swedes?|rutabagas?|okra|pak[- ]?choi|bok[- ]?choy|chard|sorrel|rhubarb|watercress|cress|horseradish|avocados?|olives?|capers?|brussels sprouts|courgettes?|zucchinis?|chicory|endives?|witloof|baklazan\w*|por(?:a|y|ow|em|ze)?|fenkul\w*|kalarep\w*|karczoch\w*|szparag\w*|rzodkiew\w*|rzep(?:a|y|ie|e)?|brukiew|brukwi\w*|botwin\w*|bocwin\w*|szczaw\w*|rabarbar\w*|rukiew|rukwi\w*|rzezuch\w*|chrzan\w*|awokado|kapar\w*|bruksel\w*|cukini\w*|cykori\w*|endywi\w*)\b/,
   fruit: /\b(?:bananas?|grapes?|melons?|watermelons?|kiwifruit|kiwis?|mango(?:es|s)?|pineapples?|nectarines?|gooseberries|blackberries|tangerines?|mandarins?|grapefruits?|banan\w*|winogron\w*|melon\w*|arbuz\w*|kiwi|mango|ananas\w*|nektaryn\w*|agrest\w*|jezyn\w*|truskawk\w*|malin\w*|jagod\w*|czeresni\w*|morel\w*|daktyl\w*|fig\w*|mandaryn\w*|grejpfrut\w*)\b/,

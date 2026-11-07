@@ -514,11 +514,23 @@ function preservedProposal(input:EditorialContent,proposal:EditorialContent,cont
 }
 async function finish(tx:Transaction,job:JobRow,result:AiResult,cost:CostInformation) {
   const values=await settle(tx,job,cost);
-  const [updated]=await tx.update(aiJobs).set({...values,status:job.status==='cancelled'?'cancelled':'ready',result,providerFinishedAt:new Date(),ingredientResolvedAt:new Date(),errorCode:null,errorMessage:null,updatedAt:new Date()}).where(eq(aiJobs.id,job.id)).returning();return jobDto(updated);
+  const [updated]=await tx.update(aiJobs).set({...values,status:job.status==='cancelled'?'cancelled':'ready',result,providerFinishedAt:job.providerFinishedAt??new Date(),ingredientResolvedAt:new Date(),errorCode:null,errorMessage:null,updatedAt:new Date()}).where(eq(aiJobs.id,job.id)).returning();return jobDto(updated);
 }
 function completable(job:JobRow) {if(!['submitting','generating','uncertain'].includes(job.status) && !(job.status==='cancelled' && job.providerRequestId))throw new AiError(409,'JOB_STATE','Generowanie nie oczekuje na wynik.');}
 export async function finishRecipe(id:string,content:EditorialContent,cost:CostInformation={},notes:string[]=[],options:{verifiedResearchSources?:boolean}={}):Promise<AiJob> {
-  return getDb().transaction(async tx=>{await budgetLock(tx);const job=await lockedJob(tx,id);if(job.result)return jobDto(job);completable(job);if(job.kind!=='recipe')throw new AiError(409,'JOB_KIND','To generowanie nie dotyczy treści.');return finish(tx,job,{content:preservedProposal(job.input,content,job.input,options.verifiedResearchSources===true),asset:null,notes:safeNotes(notes)},cost);});
+  return getDb().transaction(async tx => {
+    await budgetLock(tx);
+    return finishRecipeInTransaction(tx, await lockedJob(tx, id), content, cost, notes, options);
+  });
+}
+
+/** Caller holds the budget and job locks. The recovery caller has verified the retained receipt. */
+export async function finishRecipeInTransaction(tx: Transaction, job: JobRow, content: EditorialContent, cost: CostInformation, notes: string[],
+  options: { verifiedResearchSources?: boolean; retained?: boolean }) {
+  if (job.result) return jobDto(job);
+  if (job.kind !== 'recipe') throw new AiError(409, 'JOB_KIND', 'To generowanie nie dotyczy treści.');
+  if (!(options.retained && job.status === 'failed' && job.providerRequestId && job.providerFinishedAt)) completable(job);
+  return finish(tx, job, { content: preservedProposal(job.input, content, job.input, options.verifiedResearchSources === true), asset: null, notes: safeNotes(notes) }, cost);
 }
 export async function finishAsset(id:string,input:AssetInput,cost:CostInformation={},notes:string[]=[]):Promise<AiJob> {
   if (!input.blobPathname || input.blobPathname.length>2_000 || input.blobPathname.includes('://') || (input.originalBlobPathname && (input.originalBlobPathname.length>2_000 || input.originalBlobPathname.includes('://'))) || !['image/webp','image/png','image/jpeg'].includes(input.contentType) || !Number.isInteger(input.width) || !Number.isInteger(input.height) || input.width<1 || input.height<1 || input.width>10_000 || input.height>10_000 || !input.alt.pl.trim() || !input.alt.en.trim() || input.alt.pl.length>20_000 || input.alt.en.length>20_000 || input.caption.pl.length>20_000 || input.caption.en.length>20_000) throw new AiError(422,'INVALID_ASSET','Fotografia lub jej opis jest nieprawidłowy.');

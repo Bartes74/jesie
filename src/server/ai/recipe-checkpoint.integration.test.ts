@@ -17,6 +17,8 @@ import { resolveRecipeIngredients } from './recipe-ingredient-resolution';
 import { pollText, usageCost } from './text-provider';
 import { getRecipeVerifiedAliases } from './recipe-ingredient-dictionary';
 import { attachRecipeReceipt } from './recipe-receipt-recovery';
+import { recoverDailyRecipeDrafts } from '@/server/trends/daily-draft-recovery';
+import { approveRecipeContent } from '@/server/editorial/content-approval';
 
 const schema = `checkpoint_test_${randomUUID().replaceAll('-', '')}`;
 const actor: EditorialActor = { id: 'owner', name: 'Owner', email: 'owner@example.invalid', role: 'owner' };
@@ -45,8 +47,11 @@ after(async () => {
   if (admin) { await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`); await admin.end(); }
 });
 
-async function fixture() {
+async function fixture(daily = false) {
   const draft = await createRecipe({ title: 'Owsianka z teff', originalText: 'Oryginalne wskazówki autora.' }, actor);
+  const runId = daily ? randomUUID() : null;
+  if (runId) await pool.query(`INSERT INTO trend_run(id,date,mode,status,recipe_id,expected_revision,search_finished_at,sources)
+    VALUES($1,'2026-11-07','daily','failed',$2,1,now(),'{}')`, [runId, draft.id]);
   const base = structuredClone(recipes[0]); base.id = draft.id;
   const input: EditorialContent = { ...draft.content, aiPhotography: { recipeDietVersion: 'ingredient-diet-v1' } };
   const raw = { slug: { pl: `teff-${draft.id}`, en: `teff-${draft.id}` }, title: { pl: 'Owsianka z teff', en: 'Teff porridge' },
@@ -57,8 +62,8 @@ async function fixture() {
     steps: [{ id: 'prepare', title: { pl: 'Przygotuj', en: 'Prepare' }, text: { pl: 'Przygotuj ziarno teff i podaj.', en: 'Prepare the teff grain and serve.' }, timerMinutes: null }],
     equipment: base.equipment, tips: base.tips, storage: base.storage, scalingNote: null, notes: [], substitutions: [] };
   const id = randomUUID(), requestId = `resp_${id.replaceAll('-', '')}`;
-  await pool.query("INSERT INTO ai_job(id,recipe_id,base_revision,kind,status,provider,model,brief,request_key,input_hash,input,created_by,created_by_name,provider_request_id,reserved_usd) VALUES($1,$2,1,'recipe','generating','openai','gpt-6.1-sol','Fixture',$3,$4,$5,'owner','Owner',$6,0)",
-    [id, draft.id, randomUUID(), createHash('sha256').update(id).digest('hex'), input, requestId]);
+  await pool.query("INSERT INTO ai_job(id,recipe_id,base_revision,kind,status,provider,model,brief,request_key,input_hash,input,created_by,created_by_name,provider_request_id,reserved_usd,trend_run_id) VALUES($1,$2,1,'recipe','generating','openai','gpt-6.1-sol','Fixture',$3,$4,$5,'owner','Owner',$6,0,$7)",
+    [id, draft.id, randomUUID(), createHash('sha256').update(id).digest('hex'), input, requestId, runId]);
   const response = { id: requestId, status: 'completed', object: 'response', output_text: JSON.stringify(raw),
     usage: { input_tokens: 10, output_tokens: 20 },
     output: [{ id: 'msg_fixture', type: 'message', status: 'completed', role: 'assistant', content: [{ type: 'output_text', text: JSON.stringify(raw), annotations: [] }] }] } as unknown as ProviderResponse;
@@ -66,8 +71,29 @@ async function fixture() {
   const cost = usageCost('gpt-6.1-sol', response.usage!);
   await failJob(id, { code: 'AI_RESULT_INVALID', message: 'Unrecognised ingredient', uncertain: false, chargedUsd: cost.chargedUsd, providerFinished: true,
     validation: { issues: [{ field: 'ingredients.teff.name', code: 'DIET_INGREDIENT_UNRECOGNISED', message: 'Unknown ingredient.' }], repairable: false } });
-  return { id, draft, raw, response, input, cost };
+  return { id, draft, raw, response, input, cost, runId };
 }
+
+test('parallel daily recoveries apply a saved recipe once, preserve the bill and require review of unresolved ingredients', async () => {
+  const f = await fixture(true);
+  const ledger = () => pool.query('SELECT * FROM ai_cost_ledger WHERE job_id=$1 ORDER BY entry', [f.id]).then(result => result.rows);
+  const originalLedger = await ledger();
+
+  const attempts = await Promise.all([recoverDailyRecipeDrafts(), recoverDailyRecipeDrafts()]);
+  assert.equal(attempts.reduce((sum, item) => sum + item.recovered, 0), 1);
+  const recipe = await getRecipe(f.draft.id);
+  assert.equal(recipe.revision, 2);
+  assert.equal(recipe.content.recipe.diet, undefined);
+  assert.deepEqual(recipe.content.recipe.ingredients[0].name, f.raw.ingredients[0].name);
+  assert.equal(recipe.publicationStatus, 'never_published');
+  assert.equal((await getJob(f.id)).status, 'applied');
+  assert.deepEqual(await ledger(), originalLedger);
+  assert.equal((await pool.query('SELECT status FROM trend_run WHERE id=$1', [f.runId])).rows[0].status, 'awaiting_review');
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_job')).rows[0].n, 1);
+  assert.equal((await pool.query('SELECT count(*)::int n FROM ai_ingredient_verification')).rows[0].n, 0);
+  await assert.rejects(approveRecipeContent(recipe.id, recipe.revision, actor),
+    error => error instanceof EditorialError && error.issues?.some(issue => issue.field === 'ingredients.teff.name') === true);
+});
 
 test('completed response is immutable, survives jsonb key ordering and rejects an unrelated receipt', async () => {
   const f = await fixture();
