@@ -29,6 +29,7 @@ function isolated() {
   const mocks: Record<string, unknown> = {
     'server-only': {},
     'workflow/api': { start: async (...args: unknown[]) => { calls.push('dispatch-text'); dispatched.push(args); } },
+    '@/server/ai/recipe-recovery-dispatch': { dispatchNewRecipeGeneration: async (id: string) => { calls.push('dispatch-text'); dispatched.push([id]); } },
     '@/workflows/ai-generation': { aiGeneration: () => {} },
     '@/lib/editorial-types': { reviewKeys: ['pl', 'en', 'quantities', 'method', 'photos', 'sources'] },
     '@/lib/hero-presentation-review': { heroPresentationReviewSchema },
@@ -119,6 +120,13 @@ test('photos and publication require prior approval of the current cooking text'
 test('a blocked photo packet recovers its existing receipts instead of creating another packet', async () => {
   const state = isolated(); state.approve();
   state.batches.push({ id: requestKey, recipeId: 'recipe', mode: 'missing', status: 'blocked', canResume: true });
+  await state.run({ action: 'generate_photos', expectedRevision: 5, requestKey });
+  assert.deepEqual(state.calls, ['recover-receipts', 'recover-photos', 'dispatch-photos']);
+});
+
+test('a photo packet left generating by a crashed worker resumes the existing package', async () => {
+  const state = isolated(); state.approve();
+  state.batches.push({ id: requestKey, mode: 'missing', status: 'generating', canResume: true });
   await state.run({ action: 'generate_photos', expectedRevision: 5, requestKey });
   assert.deepEqual(state.calls, ['recover-receipts', 'recover-photos', 'dispatch-photos']);
 });

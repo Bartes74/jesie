@@ -1,5 +1,23 @@
 # Ponowne sprawdzanie zachowanego przepisu
 
+## Ręczne odblokowanie etapu sprawdzania
+
+Przy zatrzymanym zadaniu użyj **Popraw zachowany wynik i wznów**. Ekran jest dostępny zarówno ze szkicu, jak i ze szczegółów zadania. Pozwala rozstrzygnąć tożsamość i kategorię dokładnie wskazanego składnika oraz poprawić pozostałe pola zachowanego przepisu. Wymaga opisu wykonanej korekty. **Zapisz korektę i wznów od sprawdzania** zachowuje podpis administratora i uruchamia wyłącznie odczyt/walidację tego samego wyniku; nie kupuje przepisu, badań składników ani kolejnej automatycznej poprawki.
+
+Od migracji `0034-recipe-checkpoints` zakończona odpowiedź jest zapisywana w `ai_recipe_response` przed walidacją i badaniem składników. Ponowne sprawdzanie korzysta najpierw z lokalnej kopii, także gdy dostęp do generatora wygasł. Oryginał, potwierdzenie dostawcy i suma kontrolna są niezmienne. Starsze odpowiedzi są zachowywane podczas pierwszego odczytu ekranu korekty lub wznowienia.
+
+Ręczne korekty tworzą niezmienne wersje `ai_recipe_manual_repair`. Decyzja o składniku obowiązuje tylko w tym przepisie, dla identycznej pary nazw PL/EN i identyfikatora składnika; nie rozszerza globalnego słownika. Nie może zmienić rozpoznanego mięsa lub nabiału w produkt wegański. Zmieniona rewizja szkicu, nowszy etap poprawki, wyłączone konto i równoczesny zapis są odrzucane. Pozostałe walidacje, w tym czasy, źródła i samodzielność treści, nadal obowiązują. Awaria uruchomienia procesu nie usuwa zapisanej korekty — można ponowić wznowienie.
+
+Dotychczasowy limit dwóch płatnych poprawek nie ogranicza lokalnych korekt administratora. Ręczna korekta nie zastępuje późniejszego przeczytania i akceptacji treści, decyzji o fotografiach ani publikacji.
+
+W trakcie opracowania edytor udostępnia **Sprawdź i wznów ten etap**, a przy fotografiach **Sprawdź i wznów grafiki**. Działający proces jest budzony; po potwierdzonym zakończeniu jego wykonawcy kontynuacja korzysta z zapisanych zleceń. Nowe zadanie treści zapisuje tożsamość procesu od początku. Awaria samego uruchomienia zachowuje stan `queued`, który potwierdza brak wysłania do generatora; po dwuminutowej dzierżawie administrator może ponowić uruchomienie tego samego zadania. Stary wykonawca traci prawo do wysłania po zmianie generacji. Stan `submitting` lub niepotwierdzone przyjęcie płatnego żądania nie stanowią dowodu braku wysłania i nigdy nie uprawniają do ślepego ponawiania.
+
+Jeśli połączenie zerwało się podczas wysyłania i brakuje potwierdzenia, administrator może użyć **Uzupełnij potwierdzenie generatora**. Nowe wysłania i poprawki zawierają `metadata.jesie_job_id`; podany identyfikator jest odczytywany od dostawcy i przyjmowany wyłącznie po dokładnym dopasowaniu tej tożsamości i modelu. Nie wystarcza podobny tytuł, odpowiedź innego zadania ani deklaracja przeglądarki. Powiązanie trafia do niezmiennego audytu, a kontynuacja wyłącznie odczytuje przyjęte zlecenie. Starszych odpowiedzi bez oznaczenia nie wolno przypisywać na podstawie domysłu. Potwierdzony końcowy błąd lub odmowa generatora pozwalają zlecić nowe opracowanie, bez resetowania historii starego żądania.
+
+Testy: `npm run test:result-recovery:unit`, `npm run test:ingredient-verification` oraz `npm run test:recipe-checkpoints` na jawnie wskazanym, odizolowanym lokalnym PostgreSQL w `AI_TEST_DATABASE_URL`. Pakiet odtwarzania bazy obejmuje obie tabele i ochronę historii.
+
+## Zwykły ponowny odczyt
+
 Naprawa słownika nie zmienia automatycznie zakończonego zadania AI. Jego komunikat walidacji pozostaje częścią historii. Aby sprawdzić wynik po naprawie, użyj w panelu **Sprawdź zapisany wynik** (`POST /api/admin/ai/{id}/actions`, `action: recheck`).
 
 To osobny przebieg `recipeRecheck`, który:

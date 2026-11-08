@@ -18,6 +18,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/trends/recover",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/media",
       "schedule": "15 * * * *"
     },

@@ -1,6 +1,7 @@
 import { start } from 'workflow/api';
 import { aiGeneration } from '@/workflows/ai-generation';
 import { createJobAdmission, listJobs, getConfiguration, failJob } from '@/server/ai/store';
+import { dispatchNewRecipeGeneration } from '@/server/ai/recipe-recovery-dispatch';
 import { adminActor, adminResponse, readJson } from '@/server/http/admin';
 import { createAiInput, aiFailure } from '@/server/http/ai';
 
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
     const input = createAiInput.parse(await readJson(request));
     const {job,created} = await createJobAdmission(input, actor);
     if (created && job.status === 'queued') {
+      if (job.kind === 'recipe') return adminResponse({ job: await dispatchNewRecipeGeneration(job.id) }, 202);
       try { await start(aiGeneration, [job.id], { region: 'fra1' }); }
       catch {
         const recorded = await failJob(job.id, { code: 'AI_DISPATCH_UNCONFIRMED', message: 'Nie potwierdzono uruchomienia zadania. Zachowano zlecenie i rezerwację; sprawdź jego stan przed kolejną generacją.', uncertain: true });

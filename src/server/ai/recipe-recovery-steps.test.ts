@@ -44,7 +44,7 @@ function harness(options: { image?: boolean; failure?: ProviderError; ambiguous?
       return { repair: options.repair ? { previousResponseId: 'resp_parent', issues: [{ field: 'slug.pl', message: 'Popraw slug.' }] } : null, ancestorRequestIds: options.repair ? ['resp_parent'] : [] };
     } },
     './recipe-recovery': {}, './recipe-recovery-policy': { recipeGetRetryable }, './errors': { AiError }, '@/server/trends/store': { TrendError },
-    './manual-hero-recovery': {},
+    './manual-hero-recovery': {}, './recipe-checkpoint': { recipeResponseCheckpoint: () => undefined },
     './recipe-ingredient-resolution': { resolveRecipeIngredients: async () => ({ pending: false, dictionary: new Map(), notes: [], sources: [] }) },
   };
   const exports: Partial<typeof import('./steps')> = {};

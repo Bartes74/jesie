@@ -15,6 +15,40 @@ const receipt = 'resp_retained_unknown';
 const primary = 'https://www.fao.org/test-fixture/teff';
 const secondary = 'https://www.bbcgoodfood.com/test-fixture/teff';
 
+test('a checkpoint is committed before validation fails, then completes offline without provider credentials', async t => {
+  const { input, raw } = fixture();
+  let cached: import('openai/resources/responses/responses').Response | null = null;
+  let reads = 0, retained = false;
+  const checkpoint = {
+    read: async () => cached,
+    retain: async (response: NonNullable<typeof cached>) => { cached = structuredClone(response); retained = true; },
+    proposal: async () => null,
+  };
+  await credentials(async () => {
+    t.mock.method(globalThis, 'fetch', async () => { reads++; return Response.json(completed(raw)); });
+    await assert.rejects(pollText(model, receipt, input, [], async () => {
+      assert.equal(retained, true);
+      throw new ProviderError('AI_RESULT_INVALID', 'Manual ingredient review required.', false, undefined,
+        { issues: [{ field: 'ingredients.teff.name', code: 'DIET_INGREDIENT_UNRECOGNISED', message: 'Review exact ingredient.' }] });
+    }, checkpoint), ProviderError);
+  });
+  const previous = process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_KEY;
+  try {
+    t.mock.method(globalThis, 'fetch', async () => { assert.fail('A retained result must not need the provider.'); });
+    const ready = await pollText(model, receipt, input, [], async () => researchedIdentity(), checkpoint);
+    assert.equal(ready.done, true); assert.equal(reads, 1);
+  } finally { if (previous !== undefined) process.env.OPENAI_API_KEY = previous; }
+});
+
+test('an administrator can correct malformed original JSON using the retained checkpoint', async () => {
+  const { input, raw } = fixture();
+  const response = { ...completed(raw), output_text: '{malformed' } as unknown as import('openai/resources/responses/responses').Response;
+  const result = await pollText(model, receipt, input, [], async () => researchedIdentity(), {
+    read: async () => response, retain: async () => {}, proposal: async () => raw,
+  });
+  assert.equal(result.done, true);
+});
+
 function fixture(research = false) {
   const recipe = structuredClone(recipes[0]);
   const input: EditorialContent = {

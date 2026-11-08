@@ -259,7 +259,21 @@ export async function admitTrendRun(mode: 'daily' | 'control', actor?: Editorial
             const [restarted] = await tx.update(trendRuns).set({ status: 'queued', generation: existing.generation + 1, workflowId: null, searchRequestId: null, searchClaimedAt: null, searchFinishedAt: null, searchReservedUsd: searchReserve, searchChargedUsd: null, packetRemainingUsd: '0', searchModel, searchDiagnostics: null, configurationFingerprint: fingerprint(), sources: emptySources(), error: null, updatedAt: new Date() }).where(eq(trendRuns.id, existing.id)).returning();
             return { run: await runDto(restarted, tx), created: false, restarted: true, generation: restarted.generation };
         }
-        const [active] = await tx.select().from(trendRuns).where(inArray(trendRuns.status, [...running, 'uncertain'])).limit(1);
+        if (mode === 'daily') {
+            const expired = and(eq(trendRuns.mode, 'daily'), sql`${trendRuns.date} < ${date} AND ${trendRuns.searchDiagnostics}->'preparation' IS NULL`);
+            await tx.update(trendRuns).set({
+                status: 'failed', error: 'Nie uruchomiono przygotowania w dniu zaplanowanego przebiegu.', updatedAt: now,
+            }).where(and(expired, eq(trendRuns.status, 'queued'), isNull(trendRuns.searchClaimedAt),
+                isNull(trendRuns.searchRequestId), isNull(trendRuns.recipeId)));
+            await tx.update(trendRuns).set({
+                status: 'uncertain', error: 'Poprzedni przebieg przestał się aktualizować. Zachowano zlecenia i gotowe wyniki.', updatedAt: now,
+            }).where(and(expired, inArray(trendRuns.status, [...running]), lte(trendRuns.updatedAt, new Date(now.getTime() - 4 * 3_600_000))));
+        }
+        const [active] = await tx.select({ id: trendRuns.id }).from(trendRuns).where(and(
+            inArray(trendRuns.status, [...running, 'uncertain']),
+            mode === 'daily' ? sql`NOT (${trendRuns.status} = 'uncertain' AND ${trendRuns.mode} = 'daily'
+                AND ${trendRuns.date} < ${date} AND ${trendRuns.searchDiagnostics}->'preparation' IS NULL)` : undefined,
+        )).limit(1);
         if (active)
             throw new TrendError(409, 'TREND_ACTIVE', 'Najpierw zakończ lub wyjaśnij aktywny przebieg.');
         const [run] = await tx.insert(trendRuns).values({ id: randomUUID(), date, mode, manualRequestKey: manualRequestKey ?? null, searchModel, searchReservedUsd: searchReserve, packetRemainingUsd: '0', configurationFingerprint: fingerprint(), sources: emptySources() }).returning();
@@ -332,7 +346,7 @@ export async function finishTrendSearchFailure(id: string, cost: string | null, 
         const { candidates, selected } = selectRecipeCandidate([], dishes, id, now, await getTrendDietBalance(tx));
         const [updated] = await tx.update(trendRuns).set({ ...settlement, status: 'generating', candidateId: selected.id, error: null }).where(eq(trendRuns.id, id)).returning();
         for (const candidate of candidates) await tx.insert(trendCandidates).values({ id: candidate.id, runId: id, dishKey: candidate.dishKey, data: candidate, selected: candidate.selected });
-        if (uncertain) {
+        if (uncertain && !(run.mode === 'daily' && run.searchRequestId)) {
             // Persist the dish and its draft, but retain the search commitment and
             // stop before admitting any text or photograph while acceptance is unknown.
             const draft = selected.automaticSelection?.basis === 'catalog' ? null : await createTrendDraftInTransaction(tx, id, selected.title.pl, `Potrawa: ${selected.title.pl} / ${selected.title.en}\n${selected.rationale}\nWybrano lokalną inspirację po niepotwierdzonym wyszukiwaniu. Nie potwierdzono aktualnej popularności.`, [], false, candidateDiet(selected));
@@ -340,6 +354,8 @@ export async function finishTrendSearchFailure(id: string, cost: string | null, 
             await tx.update(trendRuns).set({ status: 'uncertain', recipeId: draft?.id ?? reused?.id ?? null, expectedRevision: draft?.revision ?? reused?.revision ?? null, error: 'Wybrano przepis rezerwowy. Przygotowanie czeka na wyjaśnienie przyjęcia wyszukiwania; istniejące żądanie nie zostanie wysłane ponownie.', packetRemainingUsd: '0', updatedAt: now }).where(eq(trendRuns.id, id));
             return false;
         }
+        // A recorded discovery receipt belongs to its own queue and ledger.
+        // The daily slot already authorizes one text draft for the selected fallback.
         await prepareSelectedDraft(tx, updated, selected);
         const [finished] = await tx.select().from(trendRuns).where(eq(trendRuns.id, id));
         return finished.status === 'generating' && Boolean(finished.recipeId);

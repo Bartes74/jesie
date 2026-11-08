@@ -1,7 +1,7 @@
 import { getWorkflowMetadata, sleep } from 'workflow';
 import { pollWithBackoff, trendSearchPollDelays, trendRunLimits } from '@/lib/trend-polling';
 import { reconcileGeneration } from '@/server/ai/steps';
-import { submitRadar, pollRadar, radarState, stopRadar, pendingRadarBills, reserveRadarPhotos } from '@/server/trends/steps';
+import { submitRadar, pollRadar, continueDailySearchWithFallback, radarState, stopRadar, pendingRadarBills, reserveRadarPhotos } from '@/server/trends/steps';
 import { approveRadarContent, finishRadarPreparation, planRadarPreparation } from '@/server/trends/preparation-steps';
 import { claimDailyPreparation } from '@/server/trends/daily-preparation-steps';
 import { preparePhoto, prepareText } from './trends';
@@ -12,12 +12,12 @@ export async function prepareDailyRecipe(runId: string, generation = 1) {
   if (!await claimDailyPreparation(runId, generation, getWorkflowMetadata().workflowRunId)) return;
   try {
     let state = await radarState(runId, generation);
-    if (!state.searchFinishedAt) {
+    if (!state.searchFinishedAt && !(state.status === 'generating' && state.candidateId && state.searchRequestId)) {
       if (!await submitRadar(runId, generation)) return;
-      if (!await pollRadar(runId, generation) && !await pollWithBackoff(trendSearchPollDelays, sleep, () => pollRadar(runId, generation))) {
-        await stopRadar(runId, 'Nie potwierdzono zakończenia wyszukiwania. Zachowano istniejące zlecenie.', true, generation);
-        return;
-      }
+      let done = false;
+      try { done = await pollRadar(runId, generation) || await pollWithBackoff(trendSearchPollDelays, sleep, () => pollRadar(runId, generation)); }
+      catch { /* The stored receipt remains available to the separate reconciliation job. */ }
+      if (!done && !await continueDailySearchWithFallback(runId, generation)) return;
     }
     state = await radarState(runId, generation);
     if (state.status !== 'generating' || !state.recipeId) return;

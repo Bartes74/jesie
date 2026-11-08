@@ -82,6 +82,10 @@ export async function claimRecipeRecoveryWorker(id: string, generation: number, 
     if (entry.generation !== generation || entry.workflowRunId && entry.workflowRunId !== workflowRunId) return false;
     if (!entry.workflowRunId) await tx.update(aiRecipeRecoveries).set({ workflowRunId, dispatchClaimedAt: entry.dispatchClaimedAt ?? new Date(), updatedAt: new Date() }).where(eq(aiRecipeRecoveries.jobId, id));
     const [job] = await tx.select().from(aiJobs).where(eq(aiJobs.id, id)).for('update');
+    if (job?.kind === 'recipe' && job.status === 'queued' && job.errorCode === 'AI_RECOVERY_DISPATCH_UNCONFIRMED') {
+      await tx.update(aiRecipeRecoveries).set({ blockedCode: null, blockedMessage: null, updatedAt: new Date() }).where(eq(aiRecipeRecoveries.jobId, id));
+      await tx.update(aiJobs).set({ errorCode: null, errorMessage: null, updatedAt: new Date() }).where(eq(aiJobs.id, id));
+    }
     if (job?.kind === 'recipe' && job.status === 'uncertain' && job.errorCode === 'AI_RECOVERY_DISPATCH_UNCONFIRMED' && job.providerRequestId && !job.result)
       await tx.update(aiJobs).set({ status: 'generating', errorCode: null, errorMessage: null, updatedAt: new Date() }).where(eq(aiJobs.id, id));
     return true;
@@ -112,7 +116,8 @@ export async function withRecipeRecovery(jobs: AiJob[], db: Database = getDb()):
     const attempt = actualLatestEntry?.attempt ?? 0;
     const stale = latest.baseRevision !== latest.revision || Boolean(latest.deletedAt) || latest.editorialStatus === 'archived';
     const ready = Boolean(latest.result && ['ready', 'applied'].includes(latest.status));
-    const recovering = !stale && ['queued', 'submitting', 'generating'].includes(latest.status);
+    const dispatchUnconfirmed = latest.status === 'queued' && latest.errorCode === 'AI_RECOVERY_DISPATCH_UNCONFIRMED' && !latestEntry?.workflowRunId;
+    const recovering = !stale && !dispatchUnconfirmed && ['queued', 'submitting', 'generating'].includes(latest.status);
     const invalidResult = latest.status === 'failed' && latest.errorCode === 'AI_RESULT_INVALID';
     // The only ancestor substitution above is a deliberately blocked, unsent
     // legacy vocabulary repair. Keep that protection while reading its parent.
@@ -127,7 +132,7 @@ export async function withRecipeRecovery(jobs: AiJob[], db: Database = getDb()):
     const blockedCode = currentBlockedState ? latestEntry?.blockedCode : null;
     const blockedMessage = currentBlockedState ? latestEntry?.blockedMessage : null;
     const exhausted = !ready && !unsupportedVocabulary && latest.status === 'failed' && latest.errorCode === 'AI_RESULT_INVALID' && attempt >= recipeRepairLimit;
-    const safeQueuedChild = Boolean(latestEntry && latestEntry.attempt > 0 && latest.status === 'queued' && !latest.providerRequestId && !latest.result);
+    const safeQueuedChild = Boolean(latestEntry && latest.status === 'queued' && !latest.providerRequestId && !latest.result);
     const canResume = !stale && (recipeReceiptCanBeRead(latest) || safeQueuedChild || latest.status === 'generating' && Boolean(latest.providerRequestId))
       && (latest.status !== 'failed' || Boolean(latest.providerFinishedAt));
     return { ...job, recovery: { status: ready ? 'ready' : exhausted ? 'exhausted' : recovering ? 'recovering' : 'blocked', attempt, maxAttempts: recipeRepairLimit,

@@ -8,7 +8,7 @@ import { heroContainers, heroPresentationProfile, isValidHeroPresentation, type 
 import { getStepTimerMinutes, maxStepTimerMinutes, stepTimerIssue } from '../../lib/step-timer-policy';
 import { inspectRecipeTimingPlan, recipeTimingPlanSchema, recipeTimingVersion, type RecipeTimingPlan } from '../../lib/recipe-timing-plan';
 import { explicitStepWaitMinimum, plannedStepRestMinutes } from '../../lib/recipe-timing-evidence';
-import { classifyRecipeDiet, inspectRecipeDiet, type VerifiedIngredientDictionary } from '../../lib/recipe-diet';
+import { inspectRecipeDiet, type VerifiedIngredientDictionary } from '../../lib/recipe-diet';
 import { recipeIssuesAllowAutomaticRepair } from './recipe-recovery-policy';
 import { recipeDietVersion } from './recipe-diet-instructions';
 
@@ -103,10 +103,32 @@ function trimStrings(value: unknown): unknown {
   return value;
 }
 
+/** Strip citation-only annotations without editing cooking prose or meaningful links. */
+function stripCitationAnnotations(text: string) {
+  return text.replace(/\s*[^]*/gu, '')
+    .replace(/\s*\(\[([a-z\d.-]+)\]\((https:\/\/[^\s()]+)\)\)/giu, (citation, label: string, href: string) => {
+      try {
+        const host = (value: string) => value.toLowerCase().replace(/^www\./u, '');
+        return host(label) === host(new URL(href).hostname) ? '' : citation;
+      } catch { return citation; }
+    }).trim();
+}
+
+function cleanPublicCopy(value: unknown): unknown {
+  if (typeof value === 'string') return stripCitationAnnotations(value);
+  if (Array.isArray(value)) return value.map(cleanPublicCopy);
+  if (object(value)) return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cleanPublicCopy(item)]));
+  return value;
+}
+
 /** Repairs representation only. Missing food facts, contradictory quantities and ambiguous IDs stay invalid. */
 export function normalizeRecipeProposal(raw: unknown): unknown {
   const result = trimStrings(raw);
   if (!object(result)) return result;
+  for (const field of ['title', 'description', 'cuisine', 'ingredients', 'steps', 'equipment', 'tips', 'storage', 'scalingNote', 'substitutions'])
+    if (field in result) result[field] = cleanPublicCopy(result[field]);
+  if (Array.isArray(result.researchSources)) for (const source of result.researchSources)
+    if (object(source) && typeof source.title === 'string') source.title = source.title.slice(0, 250).trimEnd();
   if (object(result.slug)) for (const locale of ['pl', 'en']) if (typeof result.slug[locale] === 'string') {
     result.slug[locale] = result.slug[locale].normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L')
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -159,7 +181,7 @@ export function recipeProposalIssues(raw: unknown, original: EditorialContent, v
   catch (error) { if (error instanceof ProviderError) return error.issues; throw error; }
 }
 
-export function buildRecipeProposal(raw: unknown, original: EditorialContent, verifiedAliases?: VerifiedIngredientDictionary) {
+export function buildRecipeProposal(raw: unknown, original: EditorialContent, verifiedAliases?: VerifiedIngredientDictionary, options: { draft?: boolean } = {}) {
   const current = original.aiPhotography?.recipeProposalVersion === recipeProposalVersion;
   const proposal = parsedProposal(raw, original) as z.infer<typeof legacyRecipeProposalSchema> & { heroPresentation?: z.infer<typeof recipeProposalSchema>['heroPresentation']; timingPlan?: RecipeTimingPlan };
   const planned = original.aiPhotography?.recipeTimingVersion === recipeTimingVersion;
@@ -192,7 +214,6 @@ export function buildRecipeProposal(raw: unknown, original: EditorialContent, ve
     recipe: {
       ...structuredClone(original.recipe), ...fields,
       id: original.recipe.id, featured: original.recipe.featured,
-      diet: classifyRecipeDiet({ ingredients: proposal.ingredients.map(ingredient => ({ ...ingredient, note: ingredient.note ?? undefined })) }, verifiedAliases),
       // A changed method never inherits a previous photograph's final-state claim.
       heroPresentation: current ? presentation : undefined,
       ingredients: proposal.ingredients.map(ingredient => ({ ...ingredient, note: ingredient.note ?? undefined })),
@@ -210,14 +231,13 @@ export function buildRecipeProposal(raw: unknown, original: EditorialContent, ve
       },
     },
   };
-  // Legacy receipts with ambiguous compounds remain readable under their
-  // captured contract; new jobs must resolve them before saving a category.
-  if (!inspectRecipeDiet({ ingredients: content.recipe.ingredients }, verifiedAliases).inferredDiet) delete content.recipe.diet;
+  const dietary = inspectRecipeDiet({ ingredients: content.recipe.ingredients }, verifiedAliases);
+  if (dietary.inferredDiet) content.recipe.diet = dietary.inferredDiet;
+  else delete content.recipe.diet;
   if (original.aiPhotography?.recipeDietVersion === recipeDietVersion) {
-    const dietary = inspectRecipeDiet(content.recipe, verifiedAliases);
     const target = original.aiPhotography.recipeDietTarget;
     const issues: ProviderIssue[] = [];
-    if (!dietary.inferredDiet) issues.push(...dietary.uncertainIngredients.map(item => ({
+    if (!options.draft && !dietary.inferredDiet) issues.push(...dietary.uncertainIngredients.map(item => ({
       field: `ingredients.${item.ingredientId}.name`,
       ...(item.kind === 'unrecognised-ingredient' ? { code: 'DIET_INGREDIENT_UNRECOGNISED' } : {}),
       message: item.kind === 'unrecognised-ingredient'
@@ -240,7 +260,7 @@ export function buildRecipeProposal(raw: unknown, original: EditorialContent, ve
   if (!parsed.success) resultInvalid(parsed.error.issues.map(issue => ({ field: issue.path.join('.') || 'recipe', message: issue.message })));
   const validated = structuredClone(content);
   for (const item of validated.recipe.substitutions ?? []) item.status = 'approved';
-  const issues = publicationIssues(validated, undefined, undefined, verifiedAliases).filter(issue => !/(^image$|^imageAlt\.|^heroPresentation(?:\.|$)|\.photo(?:\.|$))/.test(issue.field));
+  const issues = publicationIssues(validated, undefined, undefined, verifiedAliases, { draft: true }).filter(issue => !/(^image$|^imageAlt\.|^heroPresentation(?:\.|$)|\.photo(?:\.|$))/.test(issue.field));
   if (issues.length) resultInvalid(issues);
   const retained = new Set(proposal.ingredients.map(ingredient => ingredient.id));
   const steps = new Set(proposal.steps.map(step => step.id));

@@ -8,6 +8,7 @@ import { ProviderError } from './provider-error';
 import { responseRequest, responseRepairRequest } from './text-provider';
 import { publicationIssues } from '../editorial/validation';
 import { normalizeIngredientVerificationName } from '../../lib/ingredient-verification';
+import { unrecognisedRecipeIngredientNames } from '../../lib/recipe-diet';
 
 const ingredient = (id: string, pl: string, en: string): Ingredient => ({
   id, name: { pl, en }, amount: { kind: 'exact', value: '100' }, unit: 'g', scaling: 'linear',
@@ -139,6 +140,25 @@ test('an unsupported ingredient is a structured application knowledge gap rather
     && error.issues.some(issue => issue.field === 'ingredients.unknown.name' && issue.code === 'DIET_INGREDIENT_UNRECOGNISED'));
   assert.deepEqual(raw, before);
   assert.deepEqual(input, sourceBefore);
+});
+
+test('a valid draft with an unresolved ingredient keeps its text and no guessed category', () => {
+  const input = fixture([ingredient('unknown', 'nieznany produkt xyloroot', 'unrecognised xyloroot')]);
+  const { content } = buildRecipeProposal(rawProposal(input), input, undefined, { draft: true });
+  assert.deepEqual(content.recipe.ingredients[0].name, input.recipe.ingredients[0].name);
+  assert.equal(content.recipe.diet, undefined);
+  assert(publicationIssues(content).some(issue => issue.field === 'ingredients.unknown.name'));
+  assert(!publicationIssues(content, undefined, undefined, undefined, { draft: true }).some(issue => issue.field === 'ingredients.unknown.name'));
+});
+
+test('local vocabulary recognises the plain forms of couscous in each language without removing preparation details', () => {
+  const item = ingredient('couscous', 'drobny kuskus błyskawiczny', 'instant fine couscous');
+  const input = fixture([item]);
+  const { content } = buildRecipeProposal(rawProposal(input), input);
+  assert.deepEqual(unrecognisedRecipeIngredientNames([item]), []);
+  assert.equal(content.recipe.diet, 'vegan');
+  const buttered = fixture([ingredient('couscous', 'kuskus z masłem', 'buttered couscous')]);
+  assert.equal(buildRecipeProposal(rawProposal(buttered), buttered).content.recipe.diet, 'vegetarian');
 });
 
 test('generation and correction use the same captured dietary policy without upgrading legacy jobs', () => {

@@ -50,7 +50,7 @@ export function compatiblePreparationPhoto(job: Pick<Job, 'kind' | 'targetId' | 
 export function hasPreparedCookingText(content: EditorialContent, verifiedAliases?: VerifiedIngredientDictionary) {
     const tested = structuredClone(content);
     for (const alternative of tested.recipe.substitutions ?? []) alternative.status = 'approved';
-    return publicationIssues(tested, undefined, undefined, verifiedAliases).every(issue => isPhotoIssue(issue.field));
+    return publicationIssues(tested, undefined, undefined, verifiedAliases, { draft: true }).every(issue => isPhotoIssue(issue.field));
 }
 
 function isPhotoIssue(field: string) {
@@ -116,7 +116,7 @@ async function preparationContext(runId: string, generation: number) {
 
 export async function getPreparationPlan(runId: string, generation: number): Promise<PreparationPlan> {
     const { recipe, run } = await preparationContext(runId, generation);
-    const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients);
+    const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients, undefined, recipe.content.recipe.id);
     if (!hasCurrentManualPhotoRequest(run, contentApprovalHash(recipe.content))) return { textRequired: !hasPreparedCookingText(recipe.content, verifiedAliases), slots: [] };
     await getDb().transaction(tx => requireManualTrendPhotoRequest(tx, run, recipe));
     const allSlots = preparationSlots(recipe.content);
@@ -171,7 +171,7 @@ async function newPhoto(runId: string, generation: number, recipe: EditorialReco
 
 export async function prepareRecipeText(runId: string, generation: number): Promise<PreparationOperation> {
     const { recipe, jobs } = await preparationContext(runId, generation);
-    const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients);
+    const verifiedAliases = await getRecipeVerifiedAliases(recipe.content.recipe.ingredients, undefined, recipe.content.recipe.id);
     if (hasPreparedCookingText(recipe.content, verifiedAliases)) return { state: 'complete' };
     const existing = jobs.find(job => job.kind === 'recipe' && (job.baseRevision === recipe.revision
         || preparationFoodSnapshot(job.input) === preparationFoodSnapshot(recipe.content))
@@ -247,5 +247,6 @@ export async function advancePreparedText(runId: string, generation: number, job
         return { state: 'complete' };
     }
     if (job.status === 'applied') return { state: 'complete' };
-    return { state: terminal(job) ? 'failed' : 'blocked', reason: 'Nie ukończono opracowania treści. Zachowano dotychczasowy przepis.' };
+    return { state: terminal(job) ? 'failed' : 'blocked',
+        reason: job.errorMessage ?? 'Nie ukończono opracowania treści. Zachowano dotychczasowy przepis.' };
 }
