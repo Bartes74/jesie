@@ -13,8 +13,8 @@ import { closeDb, getDb } from '@/server/db';
 import { approveRecipeContent, contentApprovalHash } from '@/server/editorial/content-approval';
 import { contentHash, emptyChecks, getRecipe, saveRecipe } from '@/server/editorial/store';
 import { approveRadarContent } from './preparation-steps';
-import { admitTrendRun, actOnTrendRun, getTrendExecution } from './store';
-import { preparePhotoSlot } from './preparation';
+import { admitTrendRun, actOnTrendRun, attachSearchRequest, claimTrendSearch, finishTrendSearchFailure, getTrendExecution, getTrendRun } from './store';
+import { preparePhotoSlot, prepareRecipeText } from './preparation';
 import { claimSubmission, createJobAdmission, ensureSubmissionAllowed } from '@/server/ai/store';
 import { trendWorker } from './actor';
 import { publishVerifiedDailyRecipeInTransaction } from './automated-publication';
@@ -166,6 +166,32 @@ test('an unresolved previous daily receipt stays intact and does not block tomor
   assert.deepEqual(row, { status: 'uncertain', search_request_id: 'retained-receipt', search_finished_at: null });
   const repeat = await admitTrendRun('daily', undefined, now);
   assert.ok('run' in repeat && !repeat.created);
+});
+
+test('a queued discovery receipt allows one daily text job and a late bill does not replace its draft', async () => {
+  const admitted = await admitTrendRun('daily');
+  assert.ok('run' in admitted);
+  const { id } = admitted.run;
+  assert.equal((await claimTrendSearch(id, 1)).submit, true);
+  await attachSearchRequest(id, 'existing-discovery', 1);
+  assert.equal(await finishTrendSearchFailure(id, null, true, 1), true);
+  const fallback = await getTrendRun(id);
+  assert.equal(fallback.run.status, 'generating');
+  assert.equal(fallback.run.selectionBasis, 'seasonal');
+  assert.equal(fallback.run.pendingCostCount, 1);
+  assert.equal(fallback.candidates.filter(candidate => candidate.selected).length, 1);
+  assert.equal(fallback.candidates.find(candidate => candidate.selected)?.eligible, false);
+  assert.equal((await getTrendExecution(id)).searchFinishedAt, null);
+  const first = await prepareRecipeText(id, 1);
+  assert.equal(first.state, 'job');
+  assert.equal((await prepareRecipeText(id, 1)).jobId, first.jobId);
+  await finishTrendSearchFailure(id, '0.013', false, 1);
+  const current = await getTrendExecution(id);
+  assert.equal(current.recipeId, fallback.run.recipeId);
+  assert.equal(current.searchRequestId, 'existing-discovery');
+  assert.equal(current.searchChargedUsd, '0.01300000');
+  assert.equal(current.status, 'generating');
+  assert.deepEqual((await pool.query('SELECT kind FROM ai_job WHERE trend_run_id=$1', [id])).rows, [{ kind: 'recipe' }]);
 });
 
 test('research and text schedule does not depend on the optional photography provider', async () => {

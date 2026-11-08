@@ -78,6 +78,7 @@ export async function submitTrendSearch(model: string, date: string, beforeSubmi
 export async function pollTrendSearch(model: string, id: string) {
     // Expanded source fields are requested per read, including background polling.
     const response = await client().responses.retrieve(id, { include: ['web_search_call.action.sources'] });
+    if (response.id !== id) throw new Error('TREND_SEARCH_RECEIPT_MISMATCH');
     if (response.status === 'queued' || response.status === 'in_progress')
         return { done: false as const };
     const calls = response.output.filter(item => item.type === 'web_search_call');

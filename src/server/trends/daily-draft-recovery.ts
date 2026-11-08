@@ -16,25 +16,33 @@ import { manualEditorialReviewReason } from './manual-editorial-policy';
 import { startPreparationWorkflow } from './daily-dispatch';
 import { warsawDate } from './ranking';
 import { trendRuns } from './schema';
-import { admitTrendRun, trendAutomationGate, TrendError } from './store';
+import { pollTrendSearch } from './search';
+import { admitTrendRun, finishTrendSearch, finishTrendSearchFailure, searchModelForRun, trendAutomationGate, TrendError } from './store';
 
 const staleMinutes = 90;
 const recoveryDays = 14;
 type Job = typeof aiJobs.$inferSelect;
 type Run = typeof trendRuns.$inferSelect;
 
-/** A replacement worker can claim only a row that has never reached provider submission. */
+/** Retry dispatch before text admission, preserving any existing discovery receipt. */
 export async function retryDailyPreparationDispatch(now = new Date()) {
   const date = warsawDate(now);
   // No paid catch-up before the scheduled delivery or on the next Warsaw date.
   if (now.getUTCHours() < 12 || date !== now.toISOString().slice(0, 10)) return false;
   if (!(await trendAutomationGate()).enabled) return false;
   const db = getDb();
+  const untouchedDraft = sql`${trendRuns.recipeId} IS NOT NULL AND ${trendRuns.candidateId} IS NOT NULL
+    AND ${trendRuns.searchDiagnostics}->'preparation' IS NULL
+    AND EXISTS (SELECT 1 FROM editorial_recipe r WHERE r.id = ${trendRuns.recipeId}
+      AND r.revision = ${trendRuns.expectedRevision} AND r.editorial_status = 'draft' AND r.deleted_at IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM ai_job j WHERE j.recipe_id = ${trendRuns.recipeId})`;
   const unstarted = () => sql`(${trendRuns.status} = 'queued' AND ${trendRuns.searchClaimedAt} IS NULL
     AND ${trendRuns.searchRequestId} IS NULL AND ${trendRuns.recipeId} IS NULL)
-    OR (${trendRuns.status} = 'generating' AND ${trendRuns.searchFinishedAt} IS NOT NULL
-      AND ${trendRuns.recipeId} IS NOT NULL AND ${trendRuns.searchDiagnostics}->'preparation' IS NULL
-      AND NOT EXISTS (SELECT 1 FROM ai_job j WHERE j.recipe_id = ${trendRuns.recipeId}))`;
+    OR (${untouchedDraft} AND (
+      (${trendRuns.status} = 'generating' AND (${trendRuns.searchFinishedAt} IS NOT NULL OR ${trendRuns.searchRequestId} IS NOT NULL))
+      OR (${trendRuns.status} = 'uncertain' AND ${trendRuns.searchRequestId} IS NOT NULL
+        AND EXISTS (SELECT 1 FROM trend_candidate c WHERE c.id = ${trendRuns.candidateId}
+          AND c.run_id = ${trendRuns.id} AND c.selected AND c.data#>>'{automaticSelection,basis}' = 'seasonal'))))`;
   const [run] = await db.select().from(trendRuns).where(and(eq(trendRuns.mode, 'daily'),
     eq(trendRuns.date, date), sql`(${unstarted()})`, lt(trendRuns.updatedAt, new Date(now.getTime() - 120_000)))).limit(1);
   if (!run) {
@@ -53,10 +61,14 @@ export async function retryDailyPreparationDispatch(now = new Date()) {
   if (run.workflowId) {
     const status = await getRun(run.workflowId).status;
     if (!['completed', 'failed', 'cancelled'].includes(status)) return false;
+  }
+  if (run.workflowId || run.status === 'uncertain') {
     const [claimed] = await db.transaction(async tx => {
       await budgetLock(tx);
-      return tx.update(trendRuns).set({ workflowId: null, generation: generation + 1, updatedAt: now })
-        .where(and(eq(trendRuns.id, run.id), eq(trendRuns.generation, generation), eq(trendRuns.workflowId, run.workflowId!), sql`(${unstarted()})`)).returning();
+      return tx.update(trendRuns).set({ workflowId: null, generation: generation + 1, updatedAt: now,
+        ...(run.status === 'uncertain' ? { status: 'generating' as const, error: null } : {}) })
+        .where(and(eq(trendRuns.id, run.id), eq(trendRuns.generation, generation), eq(trendRuns.status, run.status),
+          run.workflowId ? eq(trendRuns.workflowId, run.workflowId) : isNull(trendRuns.workflowId), sql`(${unstarted()})`)).returning();
     });
     if (!claimed) return false;
     generation = claimed.generation;
@@ -72,7 +84,7 @@ async function readRetainedDraft(job: Job) {
 }
 
 function mayFinish(run: Run, now: Date) {
-  return run.mode === 'daily' && run.searchFinishedAt && !run.searchDiagnostics?.preparation
+  return run.mode === 'daily' && (run.searchFinishedAt || run.searchRequestId && run.candidateId) && !run.searchDiagnostics?.preparation
     && (['failed', 'uncertain'].includes(run.status)
       || run.status === 'generating' && run.updatedAt.getTime() < now.getTime() - staleMinutes * 60_000);
 }
@@ -86,7 +98,8 @@ export async function recoverDailyRecipeDrafts(now = new Date()) {
     .innerJoin(aiJobs, and(eq(aiJobs.trendRunId, trendRuns.id), eq(aiJobs.recipeId, trendRuns.recipeId)))
     .innerJoin(editorialRecipes, and(eq(editorialRecipes.id, aiJobs.recipeId), eq(editorialRecipes.revision, trendRuns.expectedRevision)))
     .leftJoin(recipeResponses, eq(recipeResponses.jobId, aiJobs.id))
-    .where(and(eq(trendRuns.mode, 'daily'), isNotNull(trendRuns.searchFinishedAt),
+    .where(and(eq(trendRuns.mode, 'daily'),
+      sql`(${trendRuns.searchFinishedAt} IS NOT NULL OR (${trendRuns.searchRequestId} IS NOT NULL AND ${trendRuns.candidateId} IS NOT NULL))`,
       eq(aiJobs.kind, 'recipe'), eq(aiJobs.provider, 'openai'), isNotNull(aiJobs.providerRequestId),
       isNull(editorialRecipes.deletedAt),
       sql`${trendRuns.createdAt} >= ${cutoff.toISOString()} AND ${trendRuns.searchDiagnostics}->'preparation' IS NULL
@@ -108,6 +121,25 @@ export async function recoverDailyRecipeDrafts(now = new Date()) {
     }
   }
   return { checked: candidates.length, recovered };
+}
+
+/** Reconcile late discovery independently, keeping the selected dish and draft. */
+export async function reconcileDailySearchReceipts(now = new Date()) {
+  const cutoff = new Date(now.getTime() - recoveryDays * 86_400_000);
+  const pending = await getDb().select().from(trendRuns).where(and(eq(trendRuns.mode, 'daily'),
+    isNotNull(trendRuns.candidateId), isNotNull(trendRuns.searchRequestId), isNull(trendRuns.searchFinishedAt),
+    sql`${trendRuns.createdAt} >= ${cutoff.toISOString()}`)).orderBy(desc(trendRuns.createdAt)).limit(4);
+  await Promise.all(pending.map(async run => {
+    try {
+      const result = await pollTrendSearch(searchModelForRun(run), run.searchRequestId!);
+      if (result.done) await finishTrendSearch(run.id, result.candidates, result.allowedUrls, result.chargedUsd,
+        result.unavailable, run.generation, result.diagnostics);
+    } catch (error) {
+      if (error instanceof ProviderError && !error.uncertain) {
+        await finishTrendSearchFailure(run.id, error.chargedUsd ?? null, false, run.generation);
+      } else console.warn(JSON.stringify({ event: 'daily_search_read_deferred', runId: run.id }));
+    }
+  }));
 }
 
 async function recoverDraft(snapshot: Run, candidate: Job, now: Date) {

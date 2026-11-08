@@ -55,6 +55,12 @@ export async function pollRadar(id: string, generation?: number) {
         throw new RetryableError('TREND_SEARCH_STATUS_UNAVAILABLE', { retryAfter: '30s' });
     }
 }
+export async function continueDailySearchWithFallback(id: string, generation: number) {
+    'use step';
+    const prepare = await finishTrendSearchFailure(id, null, true, generation);
+    if (prepare) console.info(JSON.stringify({ event: 'daily_search_fallback', runId: id, generation }));
+    return prepare;
+}
 export async function radarState(id: string, generation?: number) {
     'use step';
     return currentGeneration(id, generation);

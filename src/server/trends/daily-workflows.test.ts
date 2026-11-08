@@ -15,16 +15,20 @@ function load(name: string, imports: Record<string, unknown>) {
   } });
   return exports;
 }
-function preparation(options: { duplicate?: boolean; unverified?: boolean; manualPhotoRequest?: boolean; preflightFailed?: boolean; preflightBlocked?: boolean; failedSlot?: string; unknownSlot?: string } = {}) {
+function preparation(options: { duplicate?: boolean; unverified?: boolean; manualPhotoRequest?: boolean; preflightFailed?: boolean; preflightBlocked?: boolean; failedSlot?: string; unknownSlot?: string; search?: 'pending' | 'resumed' | 'unavailable' } = {}) {
   const events: string[] = [];
+  let fallback = options.search === 'resumed';
   const exports = load('daily-preparation', {
     workflow: { getWorkflowMetadata: () => ({ workflowRunId: 'offline-worker' }), sleep: async () => {} },
     '@/lib/trend-polling': { trendRunLimits: { billingAttempts: 1 }, trendSearchPollDelays: [], pollWithBackoff: async () => false },
     '@/server/trends/daily-preparation-steps': { claimDailyPreparation: async () => !options.duplicate },
     '@/server/trends/steps': {
-      radarState: async () => ({ status: 'generating', recipeId: 'recipe', searchFinishedAt: 'done' }),
-      submitRadar: async () => { throw new Error('An existing search must not be submitted'); },
-      pollRadar: async () => { throw new Error('A finished search needs no polling'); },
+      radarState: async () => options.search ? { status: fallback ? 'generating' : 'searching', recipeId: fallback ? 'recipe' : null,
+        candidateId: fallback ? 'seasonal' : null, searchRequestId: 'existing-receipt', searchFinishedAt: null }
+        : { status: 'generating', recipeId: 'recipe', searchFinishedAt: 'done' },
+      submitRadar: async () => { assert(!fallback); events.push('search:claim'); return true; },
+      pollRadar: async () => { assert(!fallback); events.push('search:read'); if (options.search === 'unavailable') throw new Error('read unavailable'); return false; },
+      continueDailySearchWithFallback: async () => { events.push('search:fallback'); fallback = true; return true; },
       stopRadar: async (_run: string, _reason: string, uncertain: boolean) => { events.push(uncertain ? 'stop:uncertain' : 'stop'); },
       pendingRadarBills: async () => [],
       reserveRadarPhotos: async () => { events.push('photos:preflight'); if (options.preflightFailed) throw new Error('Photo preflight rejected the captured prompt.'); return { blocked: Boolean(options.preflightBlocked) }; },
@@ -59,6 +63,18 @@ test('a qualified ordinary daily run stops after text without any photo prefligh
 });
 test('unverified inspiration remains a text draft with no photo or publication work', async () => {
   const h = preparation({ unverified: true }); await h.run();
+  assert.deepEqual(h.events, ['text', 'content:approval']);
+});
+test('queued or unreadable discovery continues with the seasonal text after the polling window', async () => {
+  for (const search of ['pending', 'unavailable'] as const) {
+    const h = preparation({ search });
+    await h.run();
+    assert.deepEqual(h.events, ['search:claim', 'search:read', 'search:fallback', 'text', 'content:approval']);
+  }
+});
+test('a replacement workflow continues a selected draft while discovery remains pending', async () => {
+  const h = preparation({ search: 'resumed' });
+  await h.run();
   assert.deepEqual(h.events, ['text', 'content:approval']);
 });
 test('an invalid whole photo packet prevents every paid photograph', async () => {

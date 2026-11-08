@@ -346,7 +346,7 @@ export async function finishTrendSearchFailure(id: string, cost: string | null, 
         const { candidates, selected } = selectRecipeCandidate([], dishes, id, now, await getTrendDietBalance(tx));
         const [updated] = await tx.update(trendRuns).set({ ...settlement, status: 'generating', candidateId: selected.id, error: null }).where(eq(trendRuns.id, id)).returning();
         for (const candidate of candidates) await tx.insert(trendCandidates).values({ id: candidate.id, runId: id, dishKey: candidate.dishKey, data: candidate, selected: candidate.selected });
-        if (uncertain) {
+        if (uncertain && !(run.mode === 'daily' && run.searchRequestId)) {
             // Persist the dish and its draft, but retain the search commitment and
             // stop before admitting any text or photograph while acceptance is unknown.
             const draft = selected.automaticSelection?.basis === 'catalog' ? null : await createTrendDraftInTransaction(tx, id, selected.title.pl, `Potrawa: ${selected.title.pl} / ${selected.title.en}\n${selected.rationale}\nWybrano lokalną inspirację po niepotwierdzonym wyszukiwaniu. Nie potwierdzono aktualnej popularności.`, [], false, candidateDiet(selected));
@@ -354,6 +354,8 @@ export async function finishTrendSearchFailure(id: string, cost: string | null, 
             await tx.update(trendRuns).set({ status: 'uncertain', recipeId: draft?.id ?? reused?.id ?? null, expectedRevision: draft?.revision ?? reused?.revision ?? null, error: 'Wybrano przepis rezerwowy. Przygotowanie czeka na wyjaśnienie przyjęcia wyszukiwania; istniejące żądanie nie zostanie wysłane ponownie.', packetRemainingUsd: '0', updatedAt: now }).where(eq(trendRuns.id, id));
             return false;
         }
+        // A recorded discovery receipt belongs to its own queue and ledger.
+        // The daily slot already authorizes one text draft for the selected fallback.
         await prepareSelectedDraft(tx, updated, selected);
         const [finished] = await tx.select().from(trendRuns).where(eq(trendRuns.id, id));
         return finished.status === 'generating' && Boolean(finished.recipeId);
